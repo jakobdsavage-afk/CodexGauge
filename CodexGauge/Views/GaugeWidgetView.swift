@@ -51,7 +51,7 @@ struct GaugeWidgetView: View {
 
     private func header(snapshot: UsageSnapshot) -> some View {
         HStack(alignment: .center) {
-            Text("Codex Calculator")
+            Text("Codex Gauge")
                 .notebookFont(size: 25, weight: .bold)
                 .foregroundStyle(NotebookTheme.brightInk)
                 .shadow(color: NotebookTheme.ink.opacity(0.18), radius: 7)
@@ -102,6 +102,6 @@ struct GaugeWidgetView: View {
     private func accessibilityLabel(for snapshot: UsageSnapshot) -> String {
         let daily = snapshot.dailyRemainingPercent.map { "\(Int($0.rounded())) percent" } ?? "unknown"
         let weekly = snapshot.weeklyRemainingPercent.map { "\(Int($0.rounded())) percent" } ?? "unknown"
-        return "Codex Calculator. \(snapshot.primaryWindowLabel) remaining \(daily). \(snapshot.secondaryWindowLabel) remaining \(weekly)."
+        return "Codex Gauge. \(snapshot.primaryWindowLabel) remaining \(daily). \(snapshot.secondaryWindowLabel) remaining \(weekly)."
     }
 }
