@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 struct WidgetControlsView: View {
@@ -57,6 +58,7 @@ struct SketchOpacityControl: View {
                     .offset(x: max(0, width * normalized - 8))
             }
             .contentShape(Rectangle())
+            .background(NonDraggableHitArea())
             .gesture(
                 DragGesture(minimumDistance: 0)
                     .onChanged { gesture in
@@ -66,6 +68,20 @@ struct SketchOpacityControl: View {
             )
         }
         .frame(width: 52, height: 12)
+    }
+}
+
+private struct NonDraggableHitArea: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSView {
+        NonDraggableView()
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {}
+}
+
+private final class NonDraggableView: NSView {
+    override var mouseDownCanMoveWindow: Bool {
+        false
     }
 }
 

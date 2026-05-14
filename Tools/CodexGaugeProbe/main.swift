@@ -8,20 +8,90 @@ let logsDatabase = codexRoot.appendingPathComponent("logs_2.sqlite")
 print("Codex Gauge Probe")
 
 let files = sessionFiles(in: sessionsRoot)
-let observations = [
-    latestLogObservation(database: logsDatabase).map { ($0, "real-websocket-log") },
-    latestSessionObservation(files: files).map { ($0, "real-session-snapshot") }
-].compactMap { $0 }
 
-if let newest = observations.max(by: { $0.0.date < $1.0.date }) {
-    printObservation(newest.0, status: newest.1)
+if let accountUsage = await latestAccountUsageObservation(codexRoot: codexRoot) {
+    printObservation(accountUsage, status: "codex-account-usage-api")
 } else {
-    print("status: unavailable")
-    print("session_files: \(files.count)")
-    print("reason: no Codex rate-limit telemetry found; not estimating usage percentages")
+    let observations = [
+        latestLogObservation(database: logsDatabase).map { ($0, "real-websocket-log") },
+        latestSessionObservation(files: files).map { ($0, "real-session-snapshot") }
+    ].compactMap { $0 }
+
+    if let newest = observations.max(by: { $0.0.date < $1.0.date }) {
+        printObservation(newest.0, status: newest.1)
+    } else {
+        print("status: unavailable")
+        print("session_files: \(files.count)")
+        print("reason: no Codex rate-limit telemetry found; not estimating usage percentages")
+    }
 }
 
 typealias Observation = (timestamp: String, date: Date, primary: Double, secondary: Double, primaryWindow: Int?, secondaryWindow: Int?)
+
+private func latestAccountUsageObservation(codexRoot: URL) async -> Observation? {
+    guard let accessToken = readAccessToken(codexRoot: codexRoot),
+          let url = URL(string: "https://chatgpt.com/backend-api/wham/usage")
+    else {
+        return nil
+    }
+
+    var request = URLRequest(url: url)
+    request.timeoutInterval = 5
+    request.cachePolicy = .reloadIgnoringLocalCacheData
+    request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+    request.setValue("application/json", forHTTPHeaderField: "Accept")
+    request.setValue("CodexGaugeProbe", forHTTPHeaderField: "User-Agent")
+
+    guard let (data, response) = try? await URLSession.shared.data(for: request),
+          let httpResponse = response as? HTTPURLResponse,
+          (200..<300).contains(httpResponse.statusCode),
+          let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+          let rateLimit = root["rate_limit"] as? [String: Any],
+          let primary = rateLimit["primary_window"] as? [String: Any],
+          let secondary = rateLimit["secondary_window"] as? [String: Any],
+          let primaryUsed = number(primary["used_percent"]),
+          let secondaryUsed = number(secondary["used_percent"])
+    else {
+        return nil
+    }
+
+    let now = Date()
+    return (
+        timestamp: ISO8601DateFormatter().string(from: now),
+        date: now,
+        primary: primaryUsed,
+        secondary: secondaryUsed,
+        primaryWindow: number(primary["limit_window_seconds"]).map { Int(($0 / 60).rounded()) },
+        secondaryWindow: number(secondary["limit_window_seconds"]).map { Int(($0 / 60).rounded()) }
+    )
+}
+
+private func readAccessToken(codexRoot: URL) -> String? {
+    let authFile = codexRoot.appendingPathComponent("auth.json")
+    guard let data = try? Data(contentsOf: authFile),
+          let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+          let tokens = root["tokens"] as? [String: Any],
+          let accessToken = tokens["access_token"] as? String,
+          !accessToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    else {
+        return nil
+    }
+
+    return accessToken
+}
+
+private func number(_ value: Any?) -> Double? {
+    switch value {
+    case let value as Double:
+        return value
+    case let value as Int:
+        return Double(value)
+    case let value as NSNumber:
+        return value.doubleValue
+    default:
+        return nil
+    }
+}
 
 private func latestLogObservation(database: URL) -> Observation? {
     guard FileManager.default.fileExists(atPath: database.path) else {

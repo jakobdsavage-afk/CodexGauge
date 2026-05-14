@@ -18,14 +18,14 @@ enum ProviderStatus: Equatable {
 struct UsageSnapshot: Equatable {
     /// Percent used in the active Codex primary bucket.
     ///
-    /// The UI displays the inverse as remaining percent because Codex local
-    /// session telemetry reports `used_percent`, not remaining percent.
+    /// The UI displays the inverse as remaining percent because Codex usage
+    /// sources report `used_percent`, not remaining percent.
     let dailyUsagePercent: Double?
 
     /// Percent used in the active Codex secondary bucket.
     ///
-    /// In current Codex local telemetry this usually corresponds to the
-    /// longer 10,080 minute window, so the widget labels it as weekly.
+    /// In current Codex usage data this usually corresponds to the longer
+    /// 10,080 minute window, so the widget labels it as weekly.
     let weeklyUsagePercent: Double?
 
     let primaryWindowMinutes: Int?

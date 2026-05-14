@@ -30,6 +30,10 @@ struct CodexProvider: UsageProvider, @unchecked Sendable {
             )
         }
 
+        if let accountSnapshot = await latestAccountUsageSnapshot(in: codexRoot) {
+            return accountSnapshot
+        }
+
         let sessionFiles = recentSessionFiles(in: sessionsRoot)
         let exactSnapshots = [
             latestRateLimitSnapshotFromLogs(in: codexRoot),
@@ -41,6 +45,68 @@ struct CodexProvider: UsageProvider, @unchecked Sendable {
         }
 
         return unavailableSnapshot(sessionCount: sessionFiles.count)
+    }
+
+    private func latestAccountUsageSnapshot(in codexRoot: URL) async -> UsageSnapshot? {
+        guard let accessToken = readAccessToken(from: codexRoot),
+              let request = codexUsageRequest(accessToken: accessToken)
+        else {
+            return nil
+        }
+
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            guard let httpResponse = response as? HTTPURLResponse,
+                  (200..<300).contains(httpResponse.statusCode),
+                  let usage = try? JSONDecoder().decode(CodexAccountUsageResponse.self, from: data),
+                  let primary = usage.rateLimit?.primaryWindow,
+                  let secondary = usage.rateLimit?.secondaryWindow,
+                  let primaryUsed = primary.usedPercent,
+                  let secondaryUsed = secondary.usedPercent
+            else {
+                return nil
+            }
+
+            let observation = CodexRateLimitObservation(
+                timestamp: Date(),
+                primaryUsedPercent: primaryUsed,
+                secondaryUsedPercent: secondaryUsed,
+                primaryWindowMinutes: primary.windowMinutes,
+                secondaryWindowMinutes: secondary.windowMinutes
+            )
+
+            return snapshot(from: observation, source: "Codex account usage API")
+        } catch {
+            return nil
+        }
+    }
+
+    private func readAccessToken(from codexRoot: URL) -> String? {
+        let authFile = codexRoot.appendingPathComponent("auth.json")
+        guard let data = try? Data(contentsOf: authFile),
+              let auth = try? JSONDecoder().decode(CodexAuthFile.self, from: data),
+              let token = auth.tokens.accessToken?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !token.isEmpty
+        else {
+            return nil
+        }
+
+        return token
+    }
+
+    private func codexUsageRequest(accessToken: String) -> URLRequest? {
+        guard let url = URL(string: "https://chatgpt.com/backend-api/wham/usage") else {
+            return nil
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.timeoutInterval = 5
+        request.cachePolicy = .reloadIgnoringLocalCacheData
+        request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.setValue("CodexGauge", forHTTPHeaderField: "User-Agent")
+        return request
     }
 
     private func latestRateLimitSnapshotFromLogs(in codexRoot: URL) -> UsageSnapshot? {
@@ -194,5 +260,53 @@ struct CodexProvider: UsageProvider, @unchecked Sendable {
 
         let data = pipe.fileHandleForReading.readDataToEndOfFile()
         return String(decoding: data, as: UTF8.self)
+    }
+}
+
+private struct CodexAuthFile: Decodable {
+    let tokens: Tokens
+
+    struct Tokens: Decodable {
+        let accessToken: String?
+
+        enum CodingKeys: String, CodingKey {
+            case accessToken = "access_token"
+        }
+    }
+}
+
+private struct CodexAccountUsageResponse: Decodable {
+    let rateLimit: RateLimit?
+
+    enum CodingKeys: String, CodingKey {
+        case rateLimit = "rate_limit"
+    }
+
+    struct RateLimit: Decodable {
+        let primaryWindow: Bucket?
+        let secondaryWindow: Bucket?
+
+        enum CodingKeys: String, CodingKey {
+            case primaryWindow = "primary_window"
+            case secondaryWindow = "secondary_window"
+        }
+    }
+
+    struct Bucket: Decodable {
+        let usedPercent: Double?
+        let limitWindowSeconds: Double?
+
+        var windowMinutes: Int? {
+            guard let limitWindowSeconds else {
+                return nil
+            }
+
+            return Int((limitWindowSeconds / 60).rounded())
+        }
+
+        enum CodingKeys: String, CodingKey {
+            case usedPercent = "used_percent"
+            case limitWindowSeconds = "limit_window_seconds"
+        }
     }
 }
