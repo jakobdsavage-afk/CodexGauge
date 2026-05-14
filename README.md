@@ -1,8 +1,8 @@
 # Codex Gauge
 
-Codex Gauge is a tiny native macOS floating widget for watching Codex usage signals from local Codex data.
+Codex Gauge is a tiny native macOS floating widget for watching Codex usage signals from Codex account and local Codex data.
 
-It is intentionally honest: when Codex has written a local rate-limit snapshot, the widget uses that. When no exact snapshot is available, it shows `Unknown` instead of inventing a percentage.
+It is intentionally honest: when Codex account usage or local rate-limit snapshots are available, the widget uses them. When no exact snapshot is available, it shows `Unknown` instead of inventing a percentage.
 
 ## Download For Mac
 
@@ -22,20 +22,27 @@ Future updates install through the app automatically.
 
 The current provider is `CodexProvider`.
 
-It scans:
+It reads:
 
+- `~/.codex/auth.json` for the local Codex access token
+- `https://chatgpt.com/backend-api/wham/usage` for the active account usage buckets
+- `~/.codex/logs_2.sqlite` websocket rate-limit events
 - `~/.codex/sessions/**/*.jsonl`
 - Codex `token_count` events written into those session files
-- `~/.codex/logs_2.sqlite` websocket rate-limit events
 
-When local telemetry contains Codex `rate_limits`, the provider maps:
+When the Codex account usage API is available, the provider maps:
 
-- `rate_limits.primary.used_percent` to the widget's first displayed bucket, usually `5h`
-- `rate_limits.secondary.used_percent` to the widget's second displayed bucket, usually `Weekly`
+- `rate_limit.primary_window.used_percent` to the widget's first displayed bucket, usually `5h`
+- `rate_limit.secondary_window.used_percent` to the widget's second displayed bucket, usually `Weekly`
+
+If the account API cannot be reached, local telemetry is used as a fallback:
+
+- `rate_limits.primary.used_percent` maps to the widget's first displayed bucket
+- `rate_limits.secondary.used_percent` maps to the widget's second displayed bucket
 
 The UI displays remaining percent, so it renders `100 - used_percent`, and it uses Codex's reported `window_minutes` for row labels.
 
-If exact local snapshots are missing, Codex Gauge displays unknown values. The app does not fake usage values.
+If exact account or local snapshots are missing, Codex Gauge displays unknown values. The app does not fake usage values.
 
 ## Project Structure
 
@@ -57,8 +64,8 @@ CodexGauge/
 ## Architecture
 
 - `UsageProvider` is the provider protocol.
-- `CodexProvider` is the first concrete provider and owns local Codex detection.
-- `UsageRefreshService` refreshes usage every 2 seconds.
+- `CodexProvider` is the first concrete provider and owns Codex account and local usage detection.
+- `UsageRefreshService` refreshes usage every 10 seconds.
 - `FloatingPanelController` owns the native always-visible panel, remembered position, opacity, and floating level.
 - `UpdaterService` owns Sparkle update checks.
 - SwiftUI views draw the hand-sketched notebook interface.

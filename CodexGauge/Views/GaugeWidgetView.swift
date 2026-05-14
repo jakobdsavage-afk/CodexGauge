@@ -73,7 +73,7 @@ struct GaugeWidgetView: View {
 
             Spacer()
 
-            LiveIndicator(isRefreshing: refreshService.isRefreshing)
+            LiveIndicator()
         }
     }
 

@@ -8,7 +8,7 @@ final class UsageRefreshService: ObservableObject {
 
     private let provider: UsageProvider
     private var refreshTask: Task<Void, Never>?
-    private let refreshInterval: Duration = .seconds(2)
+    private let refreshInterval: Duration = .seconds(10)
 
     init(provider: UsageProvider) {
         self.provider = provider

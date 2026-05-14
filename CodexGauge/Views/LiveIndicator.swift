@@ -1,19 +1,22 @@
 import SwiftUI
 
 struct LiveIndicator: View {
-    let isRefreshing: Bool
-
     var body: some View {
         TimelineView(.animation) { timeline in
             let pulse = (sin(timeline.date.timeIntervalSinceReferenceDate * 3.1) + 1) / 2
+            let dotColor = Color(
+                red: 0.18 + pulse * 0.48,
+                green: 0.58 + pulse * 0.42,
+                blue: 0.18 + pulse * 0.40
+            )
 
             HStack(spacing: 6) {
                 Circle()
-                    .fill(NotebookTheme.ink.opacity(isRefreshing ? 0.55 : 0.78))
+                    .fill(dotColor)
                     .frame(width: 8, height: 8)
-                    .shadow(color: NotebookTheme.ink.opacity(0.35 + pulse * 0.35), radius: 5 + pulse * 4)
+                    .shadow(color: dotColor.opacity(0.35 + pulse * 0.35), radius: 5 + pulse * 4)
 
-                Text(isRefreshing ? "Scan" : "Live")
+                Text("Live")
                     .font(.system(size: 11, weight: .bold, design: .rounded))
                     .foregroundStyle(NotebookTheme.ink.opacity(0.82))
             }
