@@ -139,6 +139,6 @@ final class FloatingPanelController: NSObject, NSWindowDelegate {
     }
 
     private var widgetSize: CGSize {
-        CGSize(width: 328, height: 248)
+        CGSize(width: 372, height: 248)
     }
 }
