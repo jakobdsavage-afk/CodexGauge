@@ -38,50 +38,89 @@ struct SketchOpacityControl: View {
     private let range = 0.45...1.0
 
     var body: some View {
-        GeometryReader { proxy in
-            let width = max(1, proxy.size.width)
-            let normalized = CGFloat((value - range.lowerBound) / (range.upperBound - range.lowerBound))
-                .clamped(to: 0...1)
-
-            ZStack(alignment: .leading) {
-                Capsule()
-                    .stroke(NotebookTheme.ink.opacity(0.28), lineWidth: 1)
-
-                Capsule()
-                    .fill(NotebookTheme.ink.opacity(0.42))
-                    .frame(width: max(7, width * normalized))
-
-                Circle()
-                    .fill(NotebookTheme.brightInk)
-                    .frame(width: 8, height: 8)
-                    .shadow(color: NotebookTheme.ink.opacity(0.36), radius: 4)
-                    .offset(x: max(0, width * normalized - 8))
-            }
-            .contentShape(Rectangle())
-            .background(NonDraggableHitArea())
-            .gesture(
-                DragGesture(minimumDistance: 0)
-                    .onChanged { gesture in
-                        let next = Double((gesture.location.x / width).clamped(to: 0...1))
-                        value = range.lowerBound + next * (range.upperBound - range.lowerBound)
-                    }
-            )
-        }
+        SketchOpacitySlider(value: $value, range: range)
         .frame(width: 52, height: 12)
     }
 }
 
-private struct NonDraggableHitArea: NSViewRepresentable {
-    func makeNSView(context: Context) -> NSView {
-        NonDraggableView()
+private struct SketchOpacitySlider: NSViewRepresentable {
+    @Binding var value: Double
+    let range: ClosedRange<Double>
+
+    func makeNSView(context: Context) -> SketchOpacitySliderNSView {
+        let view = SketchOpacitySliderNSView()
+        view.onValueChanged = { value = $0 }
+        view.range = range
+        view.value = value
+        return view
     }
 
-    func updateNSView(_ nsView: NSView, context: Context) {}
+    func updateNSView(_ nsView: SketchOpacitySliderNSView, context: Context) {
+        nsView.onValueChanged = { value = $0 }
+        nsView.range = range
+        nsView.value = value
+    }
 }
 
-private final class NonDraggableView: NSView {
+private final class SketchOpacitySliderNSView: NSView {
+    var range: ClosedRange<Double> = 0.45...1.0 {
+        didSet { needsDisplay = true }
+    }
+
+    var value: Double = 1.0 {
+        didSet { needsDisplay = true }
+    }
+
+    var onValueChanged: ((Double) -> Void)?
+
+    override var acceptsFirstResponder: Bool {
+        true
+    }
+
     override var mouseDownCanMoveWindow: Bool {
         false
+    }
+
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool {
+        true
+    }
+
+    override func mouseDown(with event: NSEvent) {
+        updateValue(with: event)
+    }
+
+    override func mouseDragged(with event: NSEvent) {
+        updateValue(with: event)
+    }
+
+    override func draw(_ dirtyRect: NSRect) {
+        super.draw(dirtyRect)
+
+        let normalized = CGFloat((value - range.lowerBound) / (range.upperBound - range.lowerBound))
+            .clamped(to: 0...1)
+        let trackRect = bounds.insetBy(dx: 0.5, dy: 2.5)
+        let fillWidth = max(7, trackRect.width * normalized)
+
+        NSColor(NotebookTheme.ink.opacity(0.28)).setStroke()
+        let outline = NSBezierPath(roundedRect: trackRect, xRadius: trackRect.height / 2, yRadius: trackRect.height / 2)
+        outline.lineWidth = 1
+        outline.stroke()
+
+        NSColor(NotebookTheme.ink.opacity(0.42)).setFill()
+        let fillRect = NSRect(x: trackRect.minX, y: trackRect.minY, width: fillWidth, height: trackRect.height)
+        NSBezierPath(roundedRect: fillRect, xRadius: trackRect.height / 2, yRadius: trackRect.height / 2).fill()
+
+        NSColor(NotebookTheme.brightInk).setFill()
+        let knobX = max(trackRect.minX, min(trackRect.maxX - 8, trackRect.minX + trackRect.width * normalized - 8))
+        NSBezierPath(ovalIn: NSRect(x: knobX, y: bounds.midY - 4, width: 8, height: 8)).fill()
+    }
+
+    private func updateValue(with event: NSEvent) {
+        let location = convert(event.locationInWindow, from: nil)
+        let normalized = Double((location.x / max(bounds.width, 1)).clamped(to: 0...1))
+        let nextValue = range.lowerBound + normalized * (range.upperBound - range.lowerBound)
+        value = nextValue
+        onValueChanged?(nextValue)
     }
 }
 
