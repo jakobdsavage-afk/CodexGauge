@@ -42,7 +42,7 @@ The workflow runs on a hosted macOS machine and checks:
 
 ## Get A Downloadable App
 
-Use the `Build App` GitHub Actions workflow:
+Use the `Build App` GitHub Actions workflow for internal testing:
 
 1. Go to `Actions` -> `Build App`.
 2. Click `Run workflow`.
@@ -52,6 +52,8 @@ Use the `Build App` GitHub Actions workflow:
 6. Open `CodexGauge.app`.
 
 This produces the real macOS app bundle. It is ad-hoc signed rather than Developer ID notarized, so Gatekeeper may ask you to right-click and choose `Open` on first launch.
+
+For a public-ready download that works cleanly for everyone, use the `Release` workflow after adding the Apple Developer ID and notarization secrets described in `DISTRIBUTION.md`.
 
 ## Usage Detection Notes
 

@@ -72,7 +72,9 @@ The macOS runner validates the project files, builds the Swift package, runs `Co
 
 ## Download The App From GitHub
 
-GitHub Actions can also build a downloadable `.app` bundle:
+GitHub Actions can build two kinds of app bundles.
+
+For internal testing, use `Build App`:
 
 1. Open the repository's `Actions` tab.
 2. Choose `Build App`.
@@ -82,6 +84,8 @@ GitHub Actions can also build a downloadable `.app` bundle:
 6. Unzip it and open `CodexGauge.app`.
 
 The artifact is ad-hoc signed, not notarized with an Apple Developer ID. macOS may require right-clicking the app and choosing `Open` the first time.
+
+For public downloads, use the `Release` workflow instead. That workflow requires Apple Developer secrets, signs with Developer ID, notarizes with Apple, staples the ticket, and publishes a GitHub Release zip that normal users can open without the quarantine workaround. See `DISTRIBUTION.md`.
 
 ## Run From Swift Package
 

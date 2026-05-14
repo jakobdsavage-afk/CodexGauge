@@ -1,0 +1,140 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version, for example v1.0.0"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  notarized-release:
+    name: Build, Notarize, and Release
+    runs-on: macos-15
+
+    env:
+      APP_NAME: CodexGauge
+      KEYCHAIN_PATH: build-signing.keychain-db
+      KEYCHAIN_PASSWORD: ${{ github.run_id }}-${{ github.run_attempt }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Validate version input
+        run: |
+          if [[ ! "${{ inputs.version }}" =~ ^v[0-9]+\\.[0-9]+\\.[0-9]+$ ]]; then
+            echo "Version must look like v1.0.0"
+            exit 1
+          fi
+
+      - name: Import Developer ID certificate
+        env:
+          CERTIFICATE_BASE64: ${{ secrets.APPLE_DEVELOPER_ID_APPLICATION_CERTIFICATE_BASE64 }}
+          CERTIFICATE_PASSWORD: ${{ secrets.APPLE_DEVELOPER_ID_APPLICATION_CERTIFICATE_PASSWORD }}
+        run: |
+          if [[ -z "$CERTIFICATE_BASE64" || -z "$CERTIFICATE_PASSWORD" ]]; then
+            echo "Missing Developer ID certificate secrets."
+            exit 1
+          fi
+
+          echo "$CERTIFICATE_BASE64" | base64 --decode > certificate.p12
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security import certificate.p12 \
+            -k "$KEYCHAIN_PATH" \
+            -P "$CERTIFICATE_PASSWORD" \
+            -T /usr/bin/codesign \
+            -T /usr/bin/security
+          security list-keychains -d user -s "$KEYCHAIN_PATH"
+          security default-keychain -s "$KEYCHAIN_PATH"
+          security set-key-partition-list \
+            -S apple-tool:,apple:,codesign: \
+            -s \
+            -k "$KEYCHAIN_PASSWORD" \
+            "$KEYCHAIN_PATH"
+
+      - name: Build Release app
+        run: |
+          xcodebuild \
+            -project CodexGauge.xcodeproj \
+            -target CodexGauge \
+            -configuration Release \
+            SYMROOT=build \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Sign app with Developer ID
+        env:
+          DEVELOPER_ID_APPLICATION: ${{ secrets.APPLE_DEVELOPER_ID_APPLICATION_IDENTITY }}
+        run: |
+          if [[ -z "$DEVELOPER_ID_APPLICATION" ]]; then
+            echo "Missing APPLE_DEVELOPER_ID_APPLICATION_IDENTITY secret."
+            exit 1
+          fi
+
+          codesign \
+            --force \
+            --deep \
+            --options runtime \
+            --timestamp \
+            --sign "$DEVELOPER_ID_APPLICATION" \
+            "build/Release/${APP_NAME}.app"
+
+          codesign --verify --deep --strict --verbose=2 "build/Release/${APP_NAME}.app"
+
+      - name: Zip app for notarization
+        run: |
+          mkdir -p build/artifacts
+          ditto -c -k --keepParent \
+            "build/Release/${APP_NAME}.app" \
+            "build/artifacts/${APP_NAME}-notary.zip"
+
+      - name: Submit to Apple notarization
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          if [[ -z "$APPLE_ID" || -z "$APPLE_APP_SPECIFIC_PASSWORD" || -z "$APPLE_TEAM_ID" ]]; then
+            echo "Missing Apple notarization secrets."
+            exit 1
+          fi
+
+          xcrun notarytool submit "build/artifacts/${APP_NAME}-notary.zip" \
+            --apple-id "$APPLE_ID" \
+            --password "$APPLE_APP_SPECIFIC_PASSWORD" \
+            --team-id "$APPLE_TEAM_ID" \
+            --wait
+
+      - name: Staple notarization ticket
+        run: |
+          xcrun stapler staple "build/Release/${APP_NAME}.app"
+          xcrun stapler validate "build/Release/${APP_NAME}.app"
+          spctl --assess --type execute --verbose=4 "build/Release/${APP_NAME}.app"
+
+      - name: Zip notarized app
+        run: |
+          ditto -c -k --keepParent \
+            "build/Release/${APP_NAME}.app" \
+            "build/artifacts/${APP_NAME}-${{ inputs.version }}.zip"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ inputs.version }}" \
+            "build/artifacts/${APP_NAME}-${{ inputs.version }}.zip" \
+            --title "Codex Gauge ${{ inputs.version }}" \
+            --notes "Notarized macOS app bundle. Download, unzip, and open CodexGauge.app."
+
+      - name: Clean signing keychain
+        if: always()
+        run: |
+          security delete-keychain "$KEYCHAIN_PATH" || true
