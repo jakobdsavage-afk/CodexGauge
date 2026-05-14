@@ -1,79 +1,125 @@
 import Foundation
 
-/// A tiny command-line probe for machines that only have Command Line Tools.
-///
-/// The real app uses `CodexProvider`; this probe mirrors the same local data
-/// contract without launching AppKit so we can verify that the user's Codex
-/// session directory contains readable usage signals.
 let home = FileManager.default.homeDirectoryForCurrentUser
-let sessionsRoot = home.appendingPathComponent(".codex/sessions", isDirectory: true)
+let codexRoot = home.appendingPathComponent(".codex", isDirectory: true)
+let sessionsRoot = codexRoot.appendingPathComponent("sessions", isDirectory: true)
+let logsDatabase = codexRoot.appendingPathComponent("logs_2.sqlite")
 
-guard let enumerator = FileManager.default.enumerator(
-    at: sessionsRoot,
-    includingPropertiesForKeys: [.contentModificationDateKey, .fileSizeKey],
-    options: [.skipsHiddenFiles]
-) else {
-    print("Codex Gauge Probe")
+print("Codex Gauge Probe")
+
+let files = sessionFiles(in: sessionsRoot)
+let observations = [
+    latestLogObservation(database: logsDatabase).map { ($0, "real-websocket-log") },
+    latestSessionObservation(files: files).map { ($0, "real-session-snapshot") }
+].compactMap { $0 }
+
+if let newest = observations.max(by: { $0.0.date < $1.0.date }) {
+    printObservation(newest.0, status: newest.1)
+} else {
     print("status: unavailable")
-    print("reason: no ~/.codex/sessions directory")
-    Foundation.exit(0)
+    print("session_files: \(files.count)")
+    print("reason: no Codex rate-limit telemetry found; not estimating usage percentages")
 }
 
-let files = enumerator
-    .compactMap { $0 as? URL }
-    .filter { $0.pathExtension == "jsonl" }
-    .sorted { left, right in
-        let leftDate = (try? left.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast
-        let rightDate = (try? right.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast
-        return leftDate > rightDate
+typealias Observation = (timestamp: String, date: Date, primary: Double, secondary: Double, primaryWindow: Int?, secondaryWindow: Int?)
+
+private func latestLogObservation(database: URL) -> Observation? {
+    guard FileManager.default.fileExists(atPath: database.path) else {
+        return nil
     }
 
-var latest: (timestamp: String, primary: Double, secondary: Double, primaryWindow: Int?, secondaryWindow: Int?)?
+    let query = """
+    select ts || '|' || replace(coalesce(feedback_log_body, ''), char(10), ' ')
+    from logs
+    where feedback_log_body like '%websocket event: {"type":"codex.rate_limits"%'
+    order by ts desc
+    limit 40;
+    """
 
-for file in files.prefix(30) {
-    guard let text = try? readTail(of: file, maxBytes: 15_000_000) else {
-        continue
+    guard let output = runSQLite(database: database, query: query) else {
+        return nil
     }
 
-    for line in text.split(separator: "\n", omittingEmptySubsequences: true) {
-        guard line.contains("\"rate_limits\""),
-              let observation = parseRateLimitLine(String(line))
+    for line in output.split(separator: "\n", omittingEmptySubsequences: true) {
+        let pieces = line.split(separator: "|", maxSplits: 1, omittingEmptySubsequences: false)
+        guard pieces.count == 2 else {
+            continue
+        }
+
+        let timestamp = String(pieces[0])
+        let date = TimeInterval(timestamp).map { Date(timeIntervalSince1970: $0) } ?? .distantPast
+        let body = String(pieces[1])
+
+        guard let jsonStart = body.range(of: "{\"type\":\"codex.rate_limits\"")?.lowerBound,
+              let parsed = parseRateLimitJSON(extractJSONObject(from: body, startingAt: jsonStart), timestamp: timestamp, date: date)
         else {
             continue
         }
 
-        if latest == nil || observation.timestamp > latest!.timestamp {
-            latest = observation
+        return parsed
+    }
+
+    return nil
+}
+
+private func latestSessionObservation(files: [URL]) -> Observation? {
+    var latest: Observation?
+
+    for file in files.prefix(30) {
+        guard let text = try? readTail(of: file, maxBytes: 15_000_000) else {
+            continue
+        }
+
+        for line in text.split(separator: "\n", omittingEmptySubsequences: true) {
+            guard line.contains("\"rate_limits\""),
+                  let parsed = parseSessionLine(String(line))
+            else {
+                continue
+            }
+
+            if latest == nil || parsed.date > latest!.date {
+                latest = parsed
+            }
         }
     }
+
+    return latest
 }
 
-print("Codex Gauge Probe")
-print("session_files: \(files.count)")
-
-if let latest {
-    print("status: exact-local-snapshot")
-    print("daily_remaining: \(Int((100 - latest.primary).rounded()))%")
-    print("weekly_remaining: \(Int((100 - latest.secondary).rounded()))%")
-    print("source_timestamp: \(latest.timestamp)")
-    print("windows: \(latest.primaryWindow.map(String.init) ?? "?")m / \(latest.secondaryWindow.map(String.init) ?? "?")m")
-} else {
-    let estimate = estimateFromSessionFiles(files)
-    print("status: estimated")
-    print("daily_remaining: \(Int((100 - estimate.dailyUsed).rounded()))%")
-    print("weekly_remaining: \(Int((100 - estimate.weeklyUsed).rounded()))%")
-    print("reason: no local rate-limit snapshot found; estimated from session file activity")
-}
-
-private func parseRateLimitLine(_ line: String) -> (timestamp: String, primary: Double, secondary: Double, primaryWindow: Int?, secondaryWindow: Int?)? {
+private func parseSessionLine(_ line: String) -> Observation? {
     guard let data = line.data(using: .utf8),
           let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
           let timestamp = root["timestamp"] as? String,
           let payload = root["payload"] as? [String: Any],
-          payload["type"] as? String == "token_count",
-          let info = payload["info"] as? [String: Any],
-          let rateLimits = info["rate_limits"] as? [String: Any],
-          let primary = rateLimits["primary"] as? [String: Any],
+          payload["type"] as? String == "token_count"
+    else {
+        return nil
+    }
+
+    let directLimits = payload["rate_limits"] as? [String: Any]
+    let infoLimits = (payload["info"] as? [String: Any])?["rate_limits"] as? [String: Any]
+
+    guard let rateLimits = directLimits ?? infoLimits else {
+        return nil
+    }
+
+    let date = parseISODate(timestamp) ?? .distantPast
+    return parseRateLimitDictionary(rateLimits, timestamp: timestamp, date: date)
+}
+
+private func parseRateLimitJSON(_ json: String, timestamp: String, date: Date) -> Observation? {
+    guard let data = json.data(using: .utf8),
+          let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+          let rateLimits = root["rate_limits"] as? [String: Any]
+    else {
+        return nil
+    }
+
+    return parseRateLimitDictionary(rateLimits, timestamp: timestamp, date: date)
+}
+
+private func parseRateLimitDictionary(_ rateLimits: [String: Any], timestamp: String, date: Date) -> Observation? {
+    guard let primary = rateLimits["primary"] as? [String: Any],
           let secondary = rateLimits["secondary"] as? [String: Any],
           let primaryUsed = primary["used_percent"] as? Double,
           let secondaryUsed = secondary["used_percent"] as? Double
@@ -83,6 +129,7 @@ private func parseRateLimitLine(_ line: String) -> (timestamp: String, primary: 
 
     return (
         timestamp: timestamp,
+        date: date,
         primary: primaryUsed,
         secondary: secondaryUsed,
         primaryWindow: primary["window_minutes"] as? Int,
@@ -90,36 +137,65 @@ private func parseRateLimitLine(_ line: String) -> (timestamp: String, primary: 
     )
 }
 
-private func estimateFromSessionFiles(_ files: [URL]) -> (dailyUsed: Double, weeklyUsed: Double) {
-    let now = Date()
-    let calendar = Calendar.current
-    let startOfDay = calendar.startOfDay(for: now)
-    let weekAgo = calendar.date(byAdding: .day, value: -7, to: now) ?? now
-    var bytesToday: Int64 = 0
-    var bytesThisWeek: Int64 = 0
-
-    for file in files.prefix(80) {
-        guard let values = try? file.resourceValues(forKeys: [.contentModificationDateKey, .fileSizeKey]),
-              let modified = values.contentModificationDate
-        else {
-            continue
-        }
-
-        let size = Int64(values.fileSize ?? 0)
-
-        if modified >= startOfDay {
-            bytesToday += size
-        }
-
-        if modified >= weekAgo {
-            bytesThisWeek += size
-        }
+private func sessionFiles(in root: URL) -> [URL] {
+    guard let enumerator = FileManager.default.enumerator(
+        at: root,
+        includingPropertiesForKeys: [.contentModificationDateKey],
+        options: [.skipsHiddenFiles]
+    ) else {
+        return []
     }
 
-    return (
-        dailyUsed: min(95, Double(bytesToday) / 8_000_000 * 100),
-        weeklyUsed: min(95, Double(bytesThisWeek) / 42_000_000 * 100)
-    )
+    return enumerator
+        .compactMap { $0 as? URL }
+        .filter { $0.pathExtension == "jsonl" }
+        .sorted { left, right in
+            let leftDate = (try? left.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast
+            let rightDate = (try? right.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast
+            return leftDate > rightDate
+        }
+}
+
+private func printObservation(_ observation: Observation, status: String) {
+    print("status: \(status)")
+    print("daily_remaining: \(Int((100 - observation.primary).rounded()))%")
+    print("weekly_remaining: \(Int((100 - observation.secondary).rounded()))%")
+    print("source_timestamp: \(observation.timestamp)")
+    print("windows: \(observation.primaryWindow.map(String.init) ?? "?")m / \(observation.secondaryWindow.map(String.init) ?? "?")m")
+}
+
+private func parseISODate(_ value: String) -> Date? {
+    let fractional = ISO8601DateFormatter()
+    fractional.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+
+    let plain = ISO8601DateFormatter()
+    plain.formatOptions = [.withInternetDateTime]
+
+    return fractional.date(from: value) ?? plain.date(from: value)
+}
+
+private func runSQLite(database: URL, query: String) -> String? {
+    let process = Process()
+    process.executableURL = URL(fileURLWithPath: "/usr/bin/sqlite3")
+    process.arguments = ["-readonly", database.path, query]
+
+    let pipe = Pipe()
+    process.standardOutput = pipe
+    process.standardError = Pipe()
+
+    do {
+        try process.run()
+        process.waitUntilExit()
+    } catch {
+        return nil
+    }
+
+    guard process.terminationStatus == 0 else {
+        return nil
+    }
+
+    let data = pipe.fileHandleForReading.readDataToEndOfFile()
+    return String(decoding: data, as: UTF8.self)
 }
 
 private func readTail(of file: URL, maxBytes: UInt64) throws -> String {
@@ -132,4 +208,47 @@ private func readTail(of file: URL, maxBytes: UInt64) throws -> String {
     let data = try handle.readToEnd() ?? Data()
 
     return String(decoding: data, as: UTF8.self)
+}
+
+private func extractJSONObject(from body: String, startingAt start: String.Index) -> String {
+    var depth = 0
+    var isEscaped = false
+    var isInsideString = false
+    var end = start
+
+    for index in body[start...].indices {
+        let character = body[index]
+        end = index
+
+        if isEscaped {
+            isEscaped = false
+            continue
+        }
+
+        if character == "\\" {
+            isEscaped = true
+            continue
+        }
+
+        if character == "\"" {
+            isInsideString.toggle()
+            continue
+        }
+
+        guard !isInsideString else {
+            continue
+        }
+
+        if character == "{" {
+            depth += 1
+        } else if character == "}" {
+            depth -= 1
+
+            if depth == 0 {
+                break
+            }
+        }
+    }
+
+    return String(body[start...end])
 }

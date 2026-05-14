@@ -2,7 +2,7 @@ import SwiftUI
 
 struct GaugeRow: View {
     let label: String
-    let percent: Double
+    let percent: Double?
     let phase: Double
 
     var body: some View {
@@ -14,14 +14,23 @@ struct GaugeRow: View {
 
                 Spacer()
 
-                Text("\(Int(percent.rounded()))%")
+                Text(percentText)
                     .notebookFont(size: 25, weight: .bold)
                     .foregroundStyle(NotebookTheme.ink)
-                    .contentTransition(.numericText(value: percent))
+                    .contentTransition(.numericText(value: percent ?? 0))
                     .shadow(color: NotebookTheme.ink.opacity(0.15), radius: 5)
             }
 
-            SketchProgressBar(value: percent, phase: phase)
+            SketchProgressBar(value: percent ?? 0, phase: phase)
+                .opacity(percent == nil ? 0.28 : 1)
         }
+    }
+
+    private var percentText: String {
+        guard let percent else {
+            return "--"
+        }
+
+        return "\(Int(percent.rounded()))%"
     }
 }

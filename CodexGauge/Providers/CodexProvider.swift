@@ -21,21 +21,70 @@ struct CodexProvider: UsageProvider, @unchecked Sendable {
 
         guard fileManager.fileExists(atPath: codexRoot.path) else {
             return UsageSnapshot(
-                dailyUsagePercent: 0,
-                weeklyUsagePercent: 0,
+                dailyUsagePercent: nil,
+                weeklyUsagePercent: nil,
                 lastUpdated: Date(),
-                providerStatus: .unavailable("No ~/.codex directory found."),
-                isEstimated: true
+                providerStatus: .unavailable("No ~/.codex directory found.")
             )
         }
 
         let sessionFiles = recentSessionFiles(in: sessionsRoot)
+        let exactSnapshots = [
+            latestRateLimitSnapshotFromLogs(in: codexRoot),
+            latestRateLimitSnapshot(from: sessionFiles)
+        ].compactMap { $0 }
 
-        if let exactSnapshot = latestRateLimitSnapshot(from: sessionFiles) {
+        if let exactSnapshot = exactSnapshots.max(by: { $0.lastUpdated < $1.lastUpdated }) {
             return exactSnapshot
         }
 
-        return estimatedSnapshot(from: sessionFiles)
+        return unavailableSnapshot(sessionCount: sessionFiles.count)
+    }
+
+    private func latestRateLimitSnapshotFromLogs(in codexRoot: URL) -> UsageSnapshot? {
+        let database = codexRoot.appendingPathComponent("logs_2.sqlite")
+        guard fileManager.fileExists(atPath: database.path) else {
+            return nil
+        }
+
+        let query = """
+        select ts || '|' || replace(coalesce(feedback_log_body, ''), char(10), ' ')
+        from logs
+        where feedback_log_body like '%websocket event: {"type":"codex.rate_limits"%'
+        order by ts desc
+        limit 40;
+        """
+
+        guard let output = runSQLite(database: database, query: query) else {
+            return nil
+        }
+
+        var newest: CodexRateLimitObservation?
+
+        output.enumerateLines { line, _ in
+            let pieces = line.split(separator: "|", maxSplits: 1, omittingEmptySubsequences: false)
+            guard pieces.count == 2,
+                  let timestampSeconds = TimeInterval(pieces[0])
+            else {
+                return
+            }
+
+            let timestamp = Date(timeIntervalSince1970: timestampSeconds)
+            let body = String(pieces[1])
+            guard let observation = parser.observation(fromLogBody: body, timestamp: timestamp) else {
+                return
+            }
+
+            if newest == nil || observation.timestamp > newest!.timestamp {
+                newest = observation
+            }
+        }
+
+        guard let observation = newest else {
+            return nil
+        }
+
+        return snapshot(from: observation, source: "Live Codex websocket rate-limit log")
     }
 
     private func latestRateLimitSnapshot(from files: [URL]) -> UsageSnapshot? {
@@ -61,64 +110,28 @@ struct CodexProvider: UsageProvider, @unchecked Sendable {
             return nil
         }
 
+        return snapshot(from: observation, source: "Codex session rate-limit snapshot")
+    }
+
+    private func snapshot(from observation: CodexRateLimitObservation, source: String) -> UsageSnapshot {
         let primaryWindow = observation.primaryWindowMinutes.map { "\($0)m" } ?? "primary"
         let secondaryWindow = observation.secondaryWindowMinutes.map { "\($0)m" } ?? "secondary"
-        let status = "Local Codex rate-limit snapshot (\(primaryWindow) / \(secondaryWindow))."
+        let status = "\(source) (\(primaryWindow) / \(secondaryWindow))."
 
         return UsageSnapshot(
             dailyUsagePercent: UsageSnapshot.clampPercent(observation.primaryUsedPercent),
             weeklyUsagePercent: UsageSnapshot.clampPercent(observation.secondaryUsedPercent),
             lastUpdated: observation.timestamp,
-            providerStatus: .exact(status),
-            isEstimated: false
+            providerStatus: .exact(status)
         )
     }
 
-    private func estimatedSnapshot(from files: [URL]) -> UsageSnapshot {
-        let now = Date()
-        let calendar = Calendar.current
-        let startOfDay = calendar.startOfDay(for: now)
-        let weekAgo = calendar.date(byAdding: .day, value: -7, to: now) ?? now
-
-        var bytesToday: Int64 = 0
-        var bytesThisWeek: Int64 = 0
-        var newestDate: Date?
-
-        for file in files.prefix(80) {
-            guard let values = try? file.resourceValues(forKeys: [.contentModificationDateKey, .fileSizeKey]),
-                  let modified = values.contentModificationDate
-            else {
-                continue
-            }
-
-            let size = Int64(values.fileSize ?? 0)
-
-            if modified >= startOfDay {
-                bytesToday += size
-            }
-
-            if modified >= weekAgo {
-                bytesThisWeek += size
-            }
-
-            if newestDate == nil || modified > newestDate! {
-                newestDate = modified
-            }
-        }
-
-        // Codex does not publish an official quota denominator in plain local
-        // files. This fallback therefore estimates pressure from real local
-        // session activity volume and labels the result as estimated.
-        let dailyUsed = min(95, Double(bytesToday) / 8_000_000 * 100)
-        let weeklyUsed = min(95, Double(bytesThisWeek) / 42_000_000 * 100)
-        let fileCount = files.count
-
+    private func unavailableSnapshot(sessionCount: Int) -> UsageSnapshot {
         return UsageSnapshot(
-            dailyUsagePercent: UsageSnapshot.clampPercent(dailyUsed),
-            weeklyUsagePercent: UsageSnapshot.clampPercent(weeklyUsed),
-            lastUpdated: newestDate ?? now,
-            providerStatus: .estimated("Estimated from \(fileCount) Codex session file\(fileCount == 1 ? "" : "s")."),
-            isEstimated: true
+            dailyUsagePercent: nil,
+            weeklyUsagePercent: nil,
+            lastUpdated: Date(),
+            providerStatus: .unavailable("No Codex rate-limit telemetry found in logs or \(sessionCount) session file\(sessionCount == 1 ? "" : "s").")
         )
     }
 
@@ -150,6 +163,30 @@ struct CodexProvider: UsageProvider, @unchecked Sendable {
         try handle.seek(toOffset: offset)
         let data = try handle.readToEnd() ?? Data()
 
+        return String(decoding: data, as: UTF8.self)
+    }
+
+    private func runSQLite(database: URL, query: String) -> String? {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/sqlite3")
+        process.arguments = ["-readonly", database.path, query]
+
+        let pipe = Pipe()
+        process.standardOutput = pipe
+        process.standardError = Pipe()
+
+        do {
+            try process.run()
+            process.waitUntilExit()
+        } catch {
+            return nil
+        }
+
+        guard process.terminationStatus == 0 else {
+            return nil
+        }
+
+        let data = pipe.fileHandleForReading.readDataToEndOfFile()
         return String(decoding: data, as: UTF8.self)
     }
 }

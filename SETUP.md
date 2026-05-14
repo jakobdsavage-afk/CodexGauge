@@ -64,11 +64,10 @@ Exact mode:
 - Uses `primary.used_percent` and `secondary.used_percent`.
 - Displays the inverse as remaining percent.
 
-Estimated mode:
+Unavailable mode:
 
 - Used when no exact local snapshot is found.
-- Estimates pressure from real recent Codex session file activity.
-- Labels the widget as `Estimated`.
+- Shows `Unknown` instead of making up a percentage.
 
 The app never fabricates exact usage values.
 

@@ -20,10 +20,10 @@ struct GaugeWidgetView: View {
                 SketchBackground(phase: phase)
                     .shadow(color: NotebookTheme.shadow, radius: 18, x: 0, y: 12)
 
-                VStack(alignment: .leading, spacing: 10) {
+                VStack(alignment: .leading, spacing: 8) {
                     header(snapshot: snapshot)
 
-                    VStack(alignment: .leading, spacing: 8) {
+                    VStack(alignment: .leading, spacing: 6) {
                         GaugeRow(label: "Daily", percent: snapshot.dailyRemainingPercent, phase: phase)
                         GaugeRow(label: "Weekly", percent: snapshot.weeklyRemainingPercent, phase: phase + 0.9)
                     }
@@ -34,9 +34,10 @@ struct GaugeWidgetView: View {
                         .padding(.top, 1)
                 }
                 .padding(.horizontal, 20)
-                .padding(.vertical, 18)
+                .padding(.top, 17)
+                .padding(.bottom, 14)
             }
-            .frame(width: 268, height: 224)
+            .frame(width: 286, height: 252)
             .accessibilityLabel(accessibilityLabel(for: snapshot))
         }
     }
@@ -48,8 +49,8 @@ struct GaugeWidgetView: View {
                 .foregroundStyle(NotebookTheme.ink)
                 .shadow(color: NotebookTheme.ink.opacity(0.16), radius: 7)
 
-            if snapshot.isEstimated {
-                Text("Estimated")
+            if !snapshot.hasUsageValues {
+                Text("Unknown")
                     .notebookFont(size: 12, weight: .semibold)
                     .foregroundStyle(NotebookTheme.ink.opacity(0.7))
                     .padding(.horizontal, 6)
@@ -80,7 +81,7 @@ struct GaugeWidgetView: View {
             Text("•")
                 .foregroundStyle(NotebookTheme.dimInk.opacity(0.7))
 
-            Text(snapshot.isEstimated ? "Measured-ish" : "Live")
+            Text(snapshot.hasUsageValues ? "Real data" : "Unknown")
                 .notebookFont(size: 13, weight: .semibold)
                 .foregroundStyle(NotebookTheme.ink.opacity(0.86))
                 .help(snapshot.providerStatus.message)
@@ -90,6 +91,8 @@ struct GaugeWidgetView: View {
     }
 
     private func accessibilityLabel(for snapshot: UsageSnapshot) -> String {
-        "Codex Gauge. Daily remaining \(Int(snapshot.dailyRemainingPercent.rounded())) percent. Weekly remaining \(Int(snapshot.weeklyRemainingPercent.rounded())) percent."
+        let daily = snapshot.dailyRemainingPercent.map { "\(Int($0.rounded())) percent" } ?? "unknown"
+        let weekly = snapshot.weeklyRemainingPercent.map { "\(Int($0.rounded())) percent" } ?? "unknown"
+        return "Codex Gauge. Daily remaining \(daily). Weekly remaining \(weekly)."
     }
 }

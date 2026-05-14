@@ -102,7 +102,7 @@ final class FloatingPanelController: NSObject, NSWindowDelegate {
 
     private func defaultFrame() -> CGRect {
         let screenFrame = NSScreen.main?.visibleFrame ?? CGRect(x: 0, y: 0, width: 1440, height: 900)
-        let size = CGSize(width: 268, height: 224)
+        let size = CGSize(width: 286, height: 252)
         return CGRect(
             x: screenFrame.maxX - size.width - 28,
             y: screenFrame.maxY - size.height - 32,

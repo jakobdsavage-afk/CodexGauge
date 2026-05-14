@@ -2,7 +2,7 @@
 
 Codex Gauge is a tiny native macOS floating widget for watching Codex usage signals from local Codex data.
 
-It is intentionally honest: when Codex has written a local rate-limit snapshot, the widget uses that. When no exact snapshot is available, it estimates from recent local session activity and marks the values as `Estimated`.
+It is intentionally honest: when Codex has written a local rate-limit snapshot, the widget uses that. When no exact snapshot is available, it shows `Unknown` instead of inventing a percentage.
 
 ## What It Reads
 
@@ -12,16 +12,16 @@ It scans:
 
 - `~/.codex/sessions/**/*.jsonl`
 - Codex `token_count` events written into those session files
-- Local session file activity as a fallback estimate
+- `~/.codex/logs_2.sqlite` websocket rate-limit events
 
-When a session line contains Codex `rate_limits`, the provider maps:
+When local telemetry contains Codex `rate_limits`, the provider maps:
 
 - `rate_limits.primary.used_percent` to the widget's daily bucket
 - `rate_limits.secondary.used_percent` to the widget's weekly bucket
 
 The UI displays remaining percent, so it renders `100 - used_percent`.
 
-If those exact local snapshots are missing, Codex Gauge estimates from real session file sizes modified today and during the past seven days. The app does not fake exact usage values.
+If exact local snapshots are missing, Codex Gauge displays unknown values. The app does not fake usage values.
 
 ## Project Structure
 
@@ -98,6 +98,6 @@ You can also run the local data probe without launching the floating UI:
 swift run CodexGaugeProbe
 ```
 
-The probe prints whether it found an exact local Codex rate-limit snapshot or had to estimate from session files.
+The probe prints whether it found real local Codex rate-limit telemetry or had to report usage as unavailable.
 
 Full floating app behavior is best tested from Xcode because launch-at-login and accessory-app behavior are bundle-oriented macOS features. The included Xcode unit test target uses XCTest, which requires a full Xcode install rather than Command Line Tools only.
