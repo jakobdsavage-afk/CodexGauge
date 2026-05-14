@@ -48,8 +48,8 @@ struct CodexSessionRateLimitParser: @unchecked Sendable {
     }
 
     func observation(fromLogBody body: String, timestamp: Date) -> CodexRateLimitObservation? {
-        guard let typeRange = body.range(of: "codex.rate_limits"),
-              let jsonStart = body[..<typeRange.lowerBound].lastIndex(of: "{")
+        guard let eventRange = body.range(of: "websocket event:"),
+              let jsonStart = body[eventRange.upperBound...].firstIndex(of: "{")
         else {
             return nil
         }

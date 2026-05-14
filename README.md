@@ -30,10 +30,10 @@ It scans:
 
 When local telemetry contains Codex `rate_limits`, the provider maps:
 
-- `rate_limits.primary.used_percent` to the widget's daily bucket
-- `rate_limits.secondary.used_percent` to the widget's weekly bucket
+- `rate_limits.primary.used_percent` to the widget's first displayed bucket, usually `5h`
+- `rate_limits.secondary.used_percent` to the widget's second displayed bucket, usually `Weekly`
 
-The UI displays remaining percent, so it renders `100 - used_percent`.
+The UI displays remaining percent, so it renders `100 - used_percent`, and it uses Codex's reported `window_minutes` for row labels.
 
 If exact local snapshots are missing, Codex Gauge displays unknown values. The app does not fake usage values.
 
@@ -58,7 +58,7 @@ CodexGauge/
 
 - `UsageProvider` is the provider protocol.
 - `CodexProvider` is the first concrete provider and owns local Codex detection.
-- `UsageRefreshService` refreshes usage every 15 seconds.
+- `UsageRefreshService` refreshes usage every 2 seconds.
 - `FloatingPanelController` owns the native always-visible panel, remembered position, opacity, and floating level.
 - `UpdaterService` owns Sparkle update checks.
 - SwiftUI views draw the hand-sketched notebook interface.

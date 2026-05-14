@@ -25,8 +25,8 @@ struct GaugeWidgetView: View {
                     header(snapshot: snapshot)
 
                     VStack(alignment: .leading, spacing: 11) {
-                        GaugeRow(label: "Daily", percent: snapshot.dailyRemainingPercent, phase: phase)
-                        GaugeRow(label: "Weekly", percent: snapshot.weeklyRemainingPercent, phase: phase + 0.9)
+                        GaugeRow(label: snapshot.primaryWindowLabel, percent: snapshot.dailyRemainingPercent, phase: phase)
+                        GaugeRow(label: snapshot.secondaryWindowLabel, percent: snapshot.weeklyRemainingPercent, phase: phase + 0.9)
                     }
 
                     Spacer(minLength: 0)
@@ -102,6 +102,6 @@ struct GaugeWidgetView: View {
     private func accessibilityLabel(for snapshot: UsageSnapshot) -> String {
         let daily = snapshot.dailyRemainingPercent.map { "\(Int($0.rounded())) percent" } ?? "unknown"
         let weekly = snapshot.weeklyRemainingPercent.map { "\(Int($0.rounded())) percent" } ?? "unknown"
-        return "Codex Calculator. Daily remaining \(daily). Weekly remaining \(weekly)."
+        return "Codex Calculator. \(snapshot.primaryWindowLabel) remaining \(daily). \(snapshot.secondaryWindowLabel) remaining \(weekly)."
     }
 }

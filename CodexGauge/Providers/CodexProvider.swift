@@ -23,6 +23,8 @@ struct CodexProvider: UsageProvider, @unchecked Sendable {
             return UsageSnapshot(
                 dailyUsagePercent: nil,
                 weeklyUsagePercent: nil,
+                primaryWindowMinutes: nil,
+                secondaryWindowMinutes: nil,
                 lastUpdated: Date(),
                 providerStatus: .unavailable("No ~/.codex directory found.")
             )
@@ -50,7 +52,7 @@ struct CodexProvider: UsageProvider, @unchecked Sendable {
         let query = """
         select ts || '|' || replace(coalesce(feedback_log_body, ''), char(10), ' ')
         from logs
-        where feedback_log_body like '%codex.rate_limits%'
+        where feedback_log_body like '%websocket event:%codex.rate_limits%'
         order by ts desc
         limit 40;
         """
@@ -90,8 +92,8 @@ struct CodexProvider: UsageProvider, @unchecked Sendable {
     private func latestRateLimitSnapshot(from files: [URL]) -> UsageSnapshot? {
         var newest: CodexRateLimitObservation?
 
-        for file in files.prefix(30) {
-            guard let tail = try? readTail(of: file, maxBytes: 15_000_000) else {
+        for file in files.prefix(8) {
+            guard let tail = try? readTail(of: file, maxBytes: 5_000_000) else {
                 continue
             }
 
@@ -121,6 +123,8 @@ struct CodexProvider: UsageProvider, @unchecked Sendable {
         return UsageSnapshot(
             dailyUsagePercent: UsageSnapshot.clampPercent(observation.primaryUsedPercent),
             weeklyUsagePercent: UsageSnapshot.clampPercent(observation.secondaryUsedPercent),
+            primaryWindowMinutes: observation.primaryWindowMinutes,
+            secondaryWindowMinutes: observation.secondaryWindowMinutes,
             lastUpdated: observation.timestamp,
             providerStatus: .exact(status)
         )
@@ -130,6 +134,8 @@ struct CodexProvider: UsageProvider, @unchecked Sendable {
         return UsageSnapshot(
             dailyUsagePercent: nil,
             weeklyUsagePercent: nil,
+            primaryWindowMinutes: nil,
+            secondaryWindowMinutes: nil,
             lastUpdated: Date(),
             providerStatus: .unavailable("No Codex rate-limit telemetry found in logs or \(sessionCount) session file\(sessionCount == 1 ? "" : "s").")
         )

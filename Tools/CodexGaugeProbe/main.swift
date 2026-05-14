@@ -31,7 +31,7 @@ private func latestLogObservation(database: URL) -> Observation? {
     let query = """
     select ts || '|' || replace(coalesce(feedback_log_body, ''), char(10), ' ')
     from logs
-    where feedback_log_body like '%websocket event: {"type":"codex.rate_limits"%'
+    where feedback_log_body like '%websocket event:%codex.rate_limits%'
     order by ts desc
     limit 40;
     """
@@ -50,7 +50,8 @@ private func latestLogObservation(database: URL) -> Observation? {
         let date = TimeInterval(timestamp).map { Date(timeIntervalSince1970: $0) } ?? .distantPast
         let body = String(pieces[1])
 
-        guard let jsonStart = body.range(of: "{\"type\":\"codex.rate_limits\"")?.lowerBound,
+        guard let eventRange = body.range(of: "websocket event:"),
+              let jsonStart = body[eventRange.upperBound...].firstIndex(of: "{"),
               let parsed = parseRateLimitJSON(extractJSONObject(from: body, startingAt: jsonStart), timestamp: timestamp, date: date)
         else {
             continue
@@ -157,11 +158,33 @@ private func sessionFiles(in root: URL) -> [URL] {
 }
 
 private func printObservation(_ observation: Observation, status: String) {
+    let primaryLabel = windowLabel(for: observation.primaryWindow, fallback: "primary")
+    let secondaryLabel = windowLabel(for: observation.secondaryWindow, fallback: "secondary")
+
     print("status: \(status)")
-    print("daily_remaining: \(Int((100 - observation.primary).rounded()))%")
-    print("weekly_remaining: \(Int((100 - observation.secondary).rounded()))%")
+    print("\(primaryLabel)_remaining: \(Int((100 - observation.primary).rounded()))%")
+    print("\(secondaryLabel)_remaining: \(Int((100 - observation.secondary).rounded()))%")
     print("source_timestamp: \(observation.timestamp)")
     print("windows: \(observation.primaryWindow.map(String.init) ?? "?")m / \(observation.secondaryWindow.map(String.init) ?? "?")m")
+}
+
+private func windowLabel(for minutes: Int?, fallback: String) -> String {
+    guard let minutes else {
+        return fallback
+    }
+
+    switch minutes {
+    case 300:
+        return "5h"
+    case 10_080:
+        return "weekly"
+    case let value where value >= 1_440 && value % 1_440 == 0:
+        return "\(value / 1_440)d"
+    case let value where value >= 60 && value % 60 == 0:
+        return "\(value / 60)h"
+    default:
+        return "\(minutes)m"
+    }
 }
 
 private func parseISODate(_ value: String) -> Date? {
