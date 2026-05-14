@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Codex Gauge
+    runs-on: macos-15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Show toolchain
+        run: |
+          swift --version
+          xcodebuild -version
+
+      - name: Validate project files
+        run: |
+          plutil -lint CodexGauge/Resources/Info.plist
+          plutil -lint CodexGauge.xcodeproj/project.pbxproj
+
+      - name: Build Swift package
+        run: swift build
+
+      - name: Run local-data probe
+        run: swift run CodexGaugeProbe
+
+      - name: Build native macOS app target
+        run: |
+          xcodebuild \
+            -project CodexGauge.xcodeproj \
+            -target CodexGauge \
+            -configuration Debug \
+            CODE_SIGNING_ALLOWED=NO \
+            build

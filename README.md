@@ -58,6 +58,18 @@ Future providers can be added by implementing `UsageProvider` and swapping the p
 
 The app runs as a menu-bar/accessory utility. Closing the widget hides it to the menu bar.
 
+## Test Without Running Locally
+
+GitHub Actions is configured in `.github/workflows/ci.yml`.
+
+From GitHub:
+
+1. Open the repository's `Actions` tab.
+2. Choose `CI`.
+3. Click `Run workflow`.
+
+The macOS runner validates the project files, builds the Swift package, runs `CodexGaugeProbe`, and builds the native Xcode target with code signing disabled.
+
 ## Run From Swift Package
 
 The project also includes a Swift Package manifest for lightweight local builds:

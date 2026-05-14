@@ -25,6 +25,21 @@ make validate
 
 This validates the plist/project file, compiles the Swift package, and runs `CodexGaugeProbe` against local Codex session data.
 
+## Test In GitHub Actions
+
+You can test without running the app locally:
+
+1. Push to `main`, or open GitHub Actions manually.
+2. Go to `Actions` -> `CI`.
+3. Click `Run workflow`.
+
+The workflow runs on a hosted macOS machine and checks:
+
+- plist and Xcode project parsing
+- Swift Package build
+- `CodexGaugeProbe`
+- native Xcode app target build with code signing disabled
+
 ## Usage Detection Notes
 
 Codex Gauge looks for local Codex data under `~/.codex`.
