@@ -81,12 +81,19 @@ jobs:
               -o build/sparkle/appcast.xml \
               build/sparkle
 
+      - name: Create friendly download zip
+        run: |
+          cp \
+            "build/sparkle/${APP_NAME}-${{ inputs.version }}.zip" \
+            "build/sparkle/${APP_NAME}.zip"
+
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release create "${{ inputs.version }}" \
             "build/sparkle/${APP_NAME}-${{ inputs.version }}.zip" \
+            "build/sparkle/${APP_NAME}.zip" \
             "build/sparkle/appcast.xml" \
             --title "Codex Gauge ${{ inputs.version }}" \
-            --notes "Sparkle-enabled Codex Gauge update. Download the zip for first install; installed apps will use appcast.xml for future updates."
+            --notes "Download CodexGauge.zip for first install. Installed apps will use appcast.xml for future updates."

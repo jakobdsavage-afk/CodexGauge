@@ -136,6 +136,9 @@ jobs:
           ditto -c -k --keepParent \
             "build/Release/${APP_NAME}.app" \
             "build/artifacts/${APP_NAME}-${{ inputs.version }}.zip"
+          cp \
+            "build/artifacts/${APP_NAME}-${{ inputs.version }}.zip" \
+            "build/artifacts/${APP_NAME}.zip"
 
       - name: Create GitHub Release
         env:
@@ -143,8 +146,9 @@ jobs:
         run: |
           gh release create "${{ inputs.version }}" \
             "build/artifacts/${APP_NAME}-${{ inputs.version }}.zip" \
+            "build/artifacts/${APP_NAME}.zip" \
             --title "Codex Gauge ${{ inputs.version }}" \
-            --notes "Notarized macOS app bundle. Download, unzip, and open CodexGauge.app."
+            --notes "Download CodexGauge.zip, unzip it, and open CodexGauge.app."
 
       - name: Clean signing keychain
         if: always()

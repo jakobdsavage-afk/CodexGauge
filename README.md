@@ -4,6 +4,20 @@ Codex Gauge is a tiny native macOS floating widget for watching Codex usage sign
 
 It is intentionally honest: when Codex has written a local rate-limit snapshot, the widget uses that. When no exact snapshot is available, it shows `Unknown` instead of inventing a percentage.
 
+## Download For Mac
+
+[Download Codex Gauge](https://github.com/jakobdsavage-afk/CodexGauge/releases/latest/download/CodexGauge.zip)
+
+After downloading:
+
+1. Open `CodexGauge.zip`.
+2. Drag `CodexGauge.app` into Applications.
+3. Open `CodexGauge.app`.
+
+If macOS says Apple cannot verify the app, right-click `CodexGauge.app`, choose `Open`, then click `Open` again.
+
+Future updates install through the app automatically.
+
 ## What It Reads
 
 The current provider is `CodexProvider`.
@@ -73,7 +87,9 @@ The macOS runner validates the project files, builds the Swift package, runs `Co
 
 ## Download The App From GitHub
 
-GitHub Actions can build two kinds of app bundles.
+For normal installs, use the direct download link at the top of this README. It always points to the newest release asset named `CodexGauge.zip`.
+
+GitHub Actions can also build developer/test bundles.
 
 For internal testing, use `Build App`:
 
@@ -86,13 +102,13 @@ For internal testing, use `Build App`:
 
 The artifact is ad-hoc signed, not notarized with an Apple Developer ID. macOS may require right-clicking the app and choosing `Open` the first time.
 
-For public downloads, use the `Release` workflow instead. That workflow requires Apple Developer secrets, signs with Developer ID, notarizes with Apple, staples the ticket, and publishes a GitHub Release zip that normal users can open without the quarantine workaround. See `DISTRIBUTION.md`.
+For public downloads without the macOS warning, use the `Release` workflow instead. That workflow requires Apple Developer secrets, signs with Developer ID, notarizes with Apple, staples the ticket, and publishes a GitHub Release zip that normal users can open without the quarantine workaround. See `DISTRIBUTION.md`.
 
 ## Automatic Updates
 
 Codex Gauge bundles Sparkle 2. Your dad does not install Sparkle separately.
 
-To publish an update, run the `Sparkle Release` workflow with a version like `v1.0.1`. The workflow builds the app, signs the update with Sparkle's private key, generates `appcast.xml`, and publishes both to GitHub Releases. Installed apps check that feed automatically and also expose `Check for Updates...` in the menu bar menu.
+To publish an update, run the `Sparkle Release` workflow with a version like `v1.0.1`. The workflow builds the app, signs the update with Sparkle's private key, generates `appcast.xml`, and publishes both a versioned update zip and the human-friendly `CodexGauge.zip` download to GitHub Releases. Installed apps check that feed automatically and also expose `Check for Updates...` in the menu bar menu.
 
 The update feed must be public. Private GitHub Releases return 404 to Sparkle.
 
