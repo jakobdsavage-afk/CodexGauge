@@ -15,6 +15,8 @@ https://github.com/jakobdsavage-afk/CodexGauge/releases/latest/download/appcast.
 - The update archive is signed with Sparkle's EdDSA key.
 - The app contains the matching public key in `SUPublicEDKey`.
 
+The feed URL must be publicly reachable. If the GitHub repository is private, Sparkle will see a 404 because your dad's Mac is not authenticated to GitHub from inside the app. Make the repo public or host `appcast.xml` and the update zip on another public HTTPS location.
+
 ## Secret Already Needed By CI
 
 The `Sparkle Release` workflow needs this GitHub secret:

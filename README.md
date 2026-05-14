@@ -94,6 +94,8 @@ Codex Gauge bundles Sparkle 2. Your dad does not install Sparkle separately.
 
 To publish an update, run the `Sparkle Release` workflow with a version like `v1.0.1`. The workflow builds the app, signs the update with Sparkle's private key, generates `appcast.xml`, and publishes both to GitHub Releases. Installed apps check that feed automatically and also expose `Check for Updates...` in the menu bar menu.
 
+The update feed must be public. Private GitHub Releases return 404 to Sparkle.
+
 See `AUTO_UPDATES.md`.
 
 ## Run From Swift Package
