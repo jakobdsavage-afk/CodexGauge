@@ -31,6 +31,6 @@ struct SketchProgressBar: View {
 
             context.stroke(fill, with: .color(NotebookTheme.brightInk.opacity(0.82)), lineWidth: 1.25)
         }
-        .frame(height: 20)
+        .frame(height: 18)
     }
 }

@@ -21,25 +21,30 @@ struct GaugeWidgetView: View {
                     .shadow(color: NotebookTheme.shadow, radius: 20, x: 0, y: 13)
                     .shadow(color: NotebookTheme.ink.opacity(0.08), radius: 9, x: 0, y: 0)
 
-                VStack(alignment: .leading, spacing: 10) {
+                VStack(alignment: .leading, spacing: 12) {
                     header(snapshot: snapshot)
 
-                    VStack(alignment: .leading, spacing: 9) {
+                    VStack(alignment: .leading, spacing: 11) {
                         GaugeRow(label: "Daily", percent: snapshot.dailyRemainingPercent, phase: phase)
                         GaugeRow(label: "Weekly", percent: snapshot.weeklyRemainingPercent, phase: phase + 0.9)
                     }
 
-                    footer(snapshot: snapshot)
+                    Spacer(minLength: 0)
 
-                    WidgetControlsView()
-                        .padding(.top, 1)
+                    HStack(alignment: .center, spacing: 10) {
+                        footer(snapshot: snapshot)
+
+                        Spacer(minLength: 8)
+
+                        WidgetControlsView()
+                    }
                 }
-                .padding(.leading, 24)
-                .padding(.trailing, 22)
-                .padding(.top, 20)
-                .padding(.bottom, 22)
+                .padding(.leading, 28)
+                .padding(.trailing, 27)
+                .padding(.top, 24)
+                .padding(.bottom, 24)
             }
-            .frame(width: 302, height: 272)
+            .frame(width: 328, height: 248)
             .accessibilityLabel(accessibilityLabel(for: snapshot))
         }
     }
@@ -47,7 +52,7 @@ struct GaugeWidgetView: View {
     private func header(snapshot: UsageSnapshot) -> some View {
         HStack(alignment: .center) {
             Text("Codex")
-                .notebookFont(size: 34, weight: .bold)
+                .notebookFont(size: 31, weight: .bold)
                 .foregroundStyle(NotebookTheme.brightInk)
                 .shadow(color: NotebookTheme.ink.opacity(0.18), radius: 7)
 
@@ -73,18 +78,18 @@ struct GaugeWidgetView: View {
     private func footer(snapshot: UsageSnapshot) -> some View {
         HStack(spacing: 4) {
             Text("Last Updated:")
-                .notebookFont(size: 13, weight: .semibold)
+                .notebookFont(size: 11, weight: .semibold)
                 .foregroundStyle(NotebookTheme.dimInk)
 
             Text(timeFormatter.string(from: snapshot.lastUpdated))
-                .notebookFont(size: 13, weight: .semibold)
+                .notebookFont(size: 11, weight: .semibold)
                 .foregroundStyle(NotebookTheme.ink.opacity(0.88))
 
             Text("•")
                 .foregroundStyle(NotebookTheme.dimInk.opacity(0.7))
 
             Text(snapshot.hasUsageValues ? "Real data" : "Unknown")
-                .notebookFont(size: 13, weight: .semibold)
+                .notebookFont(size: 11, weight: .semibold)
                 .foregroundStyle(NotebookTheme.brightInk.opacity(0.9))
                 .help(snapshot.providerStatus.message)
         }

@@ -5,7 +5,7 @@ struct WidgetControlsView: View {
     @EnvironmentObject private var refreshService: UsageRefreshService
 
     var body: some View {
-        HStack(spacing: 9) {
+        HStack(spacing: 8) {
             Button {
                 preferences.alwaysOnTop.toggle()
             } label: {
@@ -24,12 +24,54 @@ struct WidgetControlsView: View {
                 .font(.system(size: 11, weight: .semibold))
                 .foregroundStyle(NotebookTheme.dimInk)
 
-            Slider(value: $preferences.panelOpacity, in: 0.45...1)
-                .controlSize(.small)
-                .tint(NotebookTheme.ink)
+            SketchOpacityControl(value: $preferences.panelOpacity)
                 .help("Transparency")
         }
         .buttonStyle(SketchIconButtonStyle())
+    }
+}
+
+struct SketchOpacityControl: View {
+    @Binding var value: Double
+
+    private let range = 0.45...1.0
+
+    var body: some View {
+        GeometryReader { proxy in
+            let width = max(1, proxy.size.width)
+            let normalized = CGFloat((value - range.lowerBound) / (range.upperBound - range.lowerBound))
+                .clamped(to: 0...1)
+
+            ZStack(alignment: .leading) {
+                Capsule()
+                    .stroke(NotebookTheme.ink.opacity(0.28), lineWidth: 1)
+
+                Capsule()
+                    .fill(NotebookTheme.ink.opacity(0.42))
+                    .frame(width: max(7, width * normalized))
+
+                Circle()
+                    .fill(NotebookTheme.brightInk)
+                    .frame(width: 8, height: 8)
+                    .shadow(color: NotebookTheme.ink.opacity(0.36), radius: 4)
+                    .offset(x: max(0, width * normalized - 8))
+            }
+            .contentShape(Rectangle())
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { gesture in
+                        let next = Double((gesture.location.x / width).clamped(to: 0...1))
+                        value = range.lowerBound + next * (range.upperBound - range.lowerBound)
+                    }
+            )
+        }
+        .frame(width: 52, height: 12)
+    }
+}
+
+private extension Comparable {
+    func clamped(to limits: ClosedRange<Self>) -> Self {
+        min(max(self, limits.lowerBound), limits.upperBound)
     }
 }
 

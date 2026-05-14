@@ -6,16 +6,17 @@ struct GaugeRow: View {
     let phase: Double
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 5) {
             HStack(alignment: .lastTextBaseline) {
                 Text(label)
-                    .notebookFont(size: 22, weight: .semibold)
+                    .notebookFont(size: 20, weight: .semibold)
                     .foregroundStyle(NotebookTheme.brightInk.opacity(0.96))
 
                 Spacer()
 
                 Text(percentText)
-                    .notebookFont(size: 28, weight: .bold)
+                    .font(.system(size: 30, weight: .black, design: .rounded))
+                    .monospacedDigit()
                     .foregroundStyle(NotebookTheme.brightInk)
                     .contentTransition(.numericText(value: percent ?? 0))
                     .shadow(color: NotebookTheme.ink.opacity(0.18), radius: 5)

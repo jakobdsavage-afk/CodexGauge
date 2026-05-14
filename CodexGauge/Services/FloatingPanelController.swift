@@ -57,14 +57,12 @@ final class FloatingPanelController: NSObject, NSWindowDelegate {
 
         let panel = NSPanel(
             contentRect: launchFrame(),
-            styleMask: [.titled, .fullSizeContentView, .closable, .miniaturizable],
+            styleMask: [.borderless],
             backing: .buffered,
             defer: false
         )
 
         panel.title = "Codex Gauge"
-        panel.titleVisibility = .hidden
-        panel.titlebarAppearsTransparent = true
         panel.isMovableByWindowBackground = true
         panel.isReleasedWhenClosed = false
         // NSPanel defaults are tuned for transient utility panels. A desktop
@@ -128,6 +126,6 @@ final class FloatingPanelController: NSObject, NSWindowDelegate {
     }
 
     private var widgetSize: CGSize {
-        CGSize(width: 302, height: 272)
+        CGSize(width: 328, height: 248)
     }
 }
