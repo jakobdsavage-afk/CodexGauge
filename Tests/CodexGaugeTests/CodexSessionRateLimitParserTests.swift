@@ -28,6 +28,20 @@ final class CodexSessionRateLimitParserTests: XCTestCase {
         XCTAssertEqual(observation.secondaryWindowMinutes, 10080)
     }
 
+    func testParsesRateLimitSnapshotFromLogBodyWithWhitespace() throws {
+        let parser = CodexSessionRateLimitParser()
+        let body = #"""
+        websocket event: { "type" : "codex.rate_limits", "rate_limits" : { "primary" : { "used_percent" : 22, "window_minutes" : 300 }, "secondary" : { "used_percent" : 88, "window_minutes" : 10080 } } }
+        """#
+
+        let observation = try XCTUnwrap(parser.observation(fromLogBody: body, timestamp: Date(timeIntervalSince1970: 1_778_787_666)))
+
+        XCTAssertEqual(observation.primaryUsedPercent, 22)
+        XCTAssertEqual(observation.secondaryUsedPercent, 88)
+        XCTAssertEqual(observation.primaryWindowMinutes, 300)
+        XCTAssertEqual(observation.secondaryWindowMinutes, 10080)
+    }
+
     func testIgnoresNonTokenCountLines() {
         let parser = CodexSessionRateLimitParser()
         let line = #"{"timestamp":"2026-05-14T19:09:55.330Z","type":"event_msg","payload":{"type":"agent_message","message":"hello"}}"#

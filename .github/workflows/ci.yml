@@ -29,6 +29,9 @@ jobs:
       - name: Build Swift package
         run: swift build
 
+      - name: Run Swift tests
+        run: swift test
+
       - name: Run local-data probe
         run: swift run CodexGaugeProbe
 

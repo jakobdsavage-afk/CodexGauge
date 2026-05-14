@@ -29,6 +29,11 @@ let package = Package(
             name: "CodexGaugeProbe",
             dependencies: [],
             path: "Tools/CodexGaugeProbe"
+        ),
+        .testTarget(
+            name: "CodexGaugeTests",
+            dependencies: ["CodexGauge"],
+            path: "Tests/CodexGaugeTests"
         )
     ]
 )

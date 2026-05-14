@@ -39,6 +39,10 @@ final class UsageRefreshService: ObservableObject {
     }
 
     func refreshNow() async {
+        guard !isRefreshing else {
+            return
+        }
+
         isRefreshing = true
         let newSnapshot = await provider.fetchUsage()
 

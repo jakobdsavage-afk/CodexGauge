@@ -1,4 +1,4 @@
-.PHONY: build probe validate clean resolve
+.PHONY: build probe validate test clean resolve
 
 resolve:
 	swift package resolve
@@ -8,6 +8,9 @@ build:
 
 probe:
 	swift run CodexGaugeProbe
+
+test:
+	swift test
 
 validate:
 	plutil -lint CodexGauge/Resources/Info.plist CodexGauge.xcodeproj/project.pbxproj

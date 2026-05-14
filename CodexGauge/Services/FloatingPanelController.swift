@@ -111,7 +111,7 @@ final class FloatingPanelController: NSObject, NSWindowDelegate {
         }
 
         savedFrame.size = widgetSize
-        return savedFrame
+        return frameInsideVisibleScreen(savedFrame)
     }
 
     private func defaultFrame() -> CGRect {
@@ -123,6 +123,19 @@ final class FloatingPanelController: NSObject, NSWindowDelegate {
             width: size.width,
             height: size.height
         )
+    }
+
+    private func frameInsideVisibleScreen(_ frame: CGRect) -> CGRect {
+        let screens = NSScreen.screens.map(\.visibleFrame)
+        let visibleFrame = screens.first(where: { $0.intersects(frame) })
+            ?? NSScreen.main?.visibleFrame
+            ?? CGRect(x: 0, y: 0, width: 1440, height: 900)
+
+        var adjusted = frame
+        adjusted.origin.x = min(max(adjusted.minX, visibleFrame.minX + 12), visibleFrame.maxX - adjusted.width - 12)
+        adjusted.origin.y = min(max(adjusted.minY, visibleFrame.minY + 12), visibleFrame.maxY - adjusted.height - 12)
+
+        return adjusted
     }
 
     private var widgetSize: CGSize {

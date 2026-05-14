@@ -50,7 +50,7 @@ struct CodexProvider: UsageProvider, @unchecked Sendable {
         let query = """
         select ts || '|' || replace(coalesce(feedback_log_body, ''), char(10), ' ')
         from logs
-        where feedback_log_body like '%websocket event: {"type":"codex.rate_limits"%'
+        where feedback_log_body like '%codex.rate_limits%'
         order by ts desc
         limit 40;
         """

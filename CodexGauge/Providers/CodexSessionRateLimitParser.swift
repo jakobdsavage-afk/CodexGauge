@@ -48,8 +48,8 @@ struct CodexSessionRateLimitParser: @unchecked Sendable {
     }
 
     func observation(fromLogBody body: String, timestamp: Date) -> CodexRateLimitObservation? {
-        guard body.contains("\"type\":\"codex.rate_limits\""),
-              let jsonStart = body.range(of: "{\"type\":\"codex.rate_limits\"")?.lowerBound
+        guard let typeRange = body.range(of: "codex.rate_limits"),
+              let jsonStart = body[..<typeRange.lowerBound].lastIndex(of: "{")
         else {
             return nil
         }
@@ -57,6 +57,7 @@ struct CodexSessionRateLimitParser: @unchecked Sendable {
         let json = extractJSONObject(from: body, startingAt: jsonStart)
         guard let data = json.data(using: .utf8),
               let event = try? decoder.decode(CodexRateLimitLogEvent.self, from: data),
+              event.type == "codex.rate_limits",
               let primaryUsed = event.rateLimits.primary?.usedPercent,
               let secondaryUsed = event.rateLimits.secondary?.usedPercent
         else {
