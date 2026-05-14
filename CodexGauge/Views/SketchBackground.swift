@@ -5,11 +5,30 @@ struct SketchBackground: View {
 
     var body: some View {
         Canvas { context, size in
-            let rect = CGRect(origin: .zero, size: size).insetBy(dx: 8, dy: 8)
+            let rect = CGRect(origin: .zero, size: size).insetBy(dx: 11, dy: 11)
+
+            let paper = GraphicsContext.Shading.linearGradient(
+                Gradient(colors: [
+                    NotebookTheme.paperLift.opacity(0.98),
+                    NotebookTheme.paper.opacity(0.98),
+                    NotebookTheme.paperGroove.opacity(0.98)
+                ]),
+                startPoint: CGPoint(x: rect.minX, y: rect.minY),
+                endPoint: CGPoint(x: rect.maxX, y: rect.maxY)
+            )
 
             context.fill(
                 Path(roundedRect: rect, cornerRadius: 16),
-                with: .color(NotebookTheme.paper.opacity(0.96))
+                with: paper
+            )
+
+            var leftBinding = Path()
+            leftBinding.move(to: CGPoint(x: rect.minX + 10, y: rect.minY + 18))
+            leftBinding.addLine(to: CGPoint(x: rect.minX + 10 + wobble(4, phase), y: rect.maxY - 18))
+            context.stroke(
+                leftBinding,
+                with: .color(NotebookTheme.ink.opacity(0.18)),
+                style: StrokeStyle(lineWidth: 1.1, lineCap: .round)
             )
 
             for layer in 0..<3 {
@@ -23,14 +42,14 @@ struct SketchBackground: View {
 
                 context.stroke(
                     path,
-                    with: .color(NotebookTheme.ink.opacity(layer == 0 ? 0.72 : 0.24)),
+                    with: .color(NotebookTheme.ink.opacity(layer == 0 ? 0.82 : 0.26)),
                     style: StrokeStyle(lineWidth: layer == 0 ? 1.55 : 0.8, lineCap: .round, lineJoin: .round)
                 )
             }
 
             for y in stride(from: rect.minY + 46, through: rect.maxY - 22, by: 33) {
                 var line = Path()
-                line.move(to: CGPoint(x: rect.minX + 12, y: y + wobble(y, phase) * 0.6))
+                line.move(to: CGPoint(x: rect.minX + 20, y: y + wobble(y, phase) * 0.6))
                 line.addLine(to: CGPoint(x: rect.maxX - 12, y: y + wobble(y + 8, phase) * 0.6))
                 context.stroke(line, with: .color(NotebookTheme.dimInk.opacity(0.08)), lineWidth: 0.7)
             }

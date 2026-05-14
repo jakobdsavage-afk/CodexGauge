@@ -18,12 +18,13 @@ struct GaugeWidgetView: View {
 
             ZStack {
                 SketchBackground(phase: phase)
-                    .shadow(color: NotebookTheme.shadow, radius: 18, x: 0, y: 12)
+                    .shadow(color: NotebookTheme.shadow, radius: 20, x: 0, y: 13)
+                    .shadow(color: NotebookTheme.ink.opacity(0.08), radius: 9, x: 0, y: 0)
 
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: 10) {
                     header(snapshot: snapshot)
 
-                    VStack(alignment: .leading, spacing: 6) {
+                    VStack(alignment: .leading, spacing: 9) {
                         GaugeRow(label: "Daily", percent: snapshot.dailyRemainingPercent, phase: phase)
                         GaugeRow(label: "Weekly", percent: snapshot.weeklyRemainingPercent, phase: phase + 0.9)
                     }
@@ -33,11 +34,12 @@ struct GaugeWidgetView: View {
                     WidgetControlsView()
                         .padding(.top, 1)
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 17)
-                .padding(.bottom, 14)
+                .padding(.leading, 24)
+                .padding(.trailing, 22)
+                .padding(.top, 20)
+                .padding(.bottom, 22)
             }
-            .frame(width: 286, height: 252)
+            .frame(width: 302, height: 272)
             .accessibilityLabel(accessibilityLabel(for: snapshot))
         }
     }
@@ -45,9 +47,9 @@ struct GaugeWidgetView: View {
     private func header(snapshot: UsageSnapshot) -> some View {
         HStack(alignment: .center) {
             Text("Codex")
-                .notebookFont(size: 33, weight: .bold)
-                .foregroundStyle(NotebookTheme.ink)
-                .shadow(color: NotebookTheme.ink.opacity(0.16), radius: 7)
+                .notebookFont(size: 34, weight: .bold)
+                .foregroundStyle(NotebookTheme.brightInk)
+                .shadow(color: NotebookTheme.ink.opacity(0.18), radius: 7)
 
             if !snapshot.hasUsageValues {
                 Text("Unknown")
@@ -83,7 +85,7 @@ struct GaugeWidgetView: View {
 
             Text(snapshot.hasUsageValues ? "Real data" : "Unknown")
                 .notebookFont(size: 13, weight: .semibold)
-                .foregroundStyle(NotebookTheme.ink.opacity(0.86))
+                .foregroundStyle(NotebookTheme.brightInk.opacity(0.9))
                 .help(snapshot.providerStatus.message)
         }
         .lineLimit(1)

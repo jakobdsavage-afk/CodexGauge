@@ -6,14 +6,14 @@ struct SketchProgressBar: View {
 
     var body: some View {
         Canvas { context, size in
-            let rect = CGRect(origin: .zero, size: size).insetBy(dx: 1, dy: 4)
+            let rect = CGRect(origin: .zero, size: size).insetBy(dx: 1, dy: 5)
             let progressWidth = rect.width * min(1, max(0, value / 100))
 
             for line in 0..<2 {
                 var border = Path()
                 let yOffset = CGFloat(line) * 0.9
                 border.addRoundedRect(in: rect.offsetBy(dx: 0, dy: yOffset), cornerSize: CGSize(width: 5, height: 5))
-                context.stroke(border, with: .color(NotebookTheme.ink.opacity(0.36)), lineWidth: 0.8)
+                context.stroke(border, with: .color(NotebookTheme.ink.opacity(0.42)), lineWidth: 0.85)
             }
 
             guard progressWidth > 1 else {
@@ -29,8 +29,8 @@ struct SketchProgressBar: View {
                 fill.addLine(to: CGPoint(x: fillRect.maxX, y: index - jitter * 0.4))
             }
 
-            context.stroke(fill, with: .color(NotebookTheme.ink.opacity(0.78)), lineWidth: 1.2)
+            context.stroke(fill, with: .color(NotebookTheme.brightInk.opacity(0.82)), lineWidth: 1.25)
         }
-        .frame(height: 18)
+        .frame(height: 20)
     }
 }

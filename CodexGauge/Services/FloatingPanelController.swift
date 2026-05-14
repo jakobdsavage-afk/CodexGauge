@@ -56,7 +56,7 @@ final class FloatingPanelController: NSObject, NSWindowDelegate {
             .environmentObject(refreshService)
 
         let panel = NSPanel(
-            contentRect: preferences.loadFrame() ?? defaultFrame(),
+            contentRect: launchFrame(),
             styleMask: [.titled, .fullSizeContentView, .closable, .miniaturizable],
             backing: .buffered,
             defer: false
@@ -78,6 +78,8 @@ final class FloatingPanelController: NSObject, NSWindowDelegate {
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary]
         panel.delegate = self
         panel.contentView = NSHostingView(rootView: contentView)
+        panel.contentMinSize = widgetSize
+        panel.contentMaxSize = widgetSize
         applyFloatingLevel(to: panel)
         panel.alphaValue = preferences.panelOpacity
 
@@ -105,14 +107,27 @@ final class FloatingPanelController: NSObject, NSWindowDelegate {
         panel.level = preferences.alwaysOnTop ? .floating : .normal
     }
 
+    private func launchFrame() -> CGRect {
+        guard var savedFrame = preferences.loadFrame() else {
+            return defaultFrame()
+        }
+
+        savedFrame.size = widgetSize
+        return savedFrame
+    }
+
     private func defaultFrame() -> CGRect {
         let screenFrame = NSScreen.main?.visibleFrame ?? CGRect(x: 0, y: 0, width: 1440, height: 900)
-        let size = CGSize(width: 286, height: 252)
+        let size = widgetSize
         return CGRect(
             x: screenFrame.maxX - size.width - 28,
             y: screenFrame.maxY - size.height - 32,
             width: size.width,
             height: size.height
         )
+    }
+
+    private var widgetSize: CGSize {
+        CGSize(width: 302, height: 272)
     }
 }
