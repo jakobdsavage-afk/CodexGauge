@@ -1,0 +1,45 @@
+name: Build App
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  package:
+    name: Package macOS App
+    runs-on: macos-15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Build Release app
+        run: |
+          xcodebuild \
+            -project CodexGauge.xcodeproj \
+            -target CodexGauge \
+            -configuration Release \
+            -derivedDataPath build/DerivedData \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Ad-hoc sign app bundle
+        run: |
+          codesign --force --deep --sign - build/DerivedData/Build/Products/Release/CodexGauge.app
+          codesign --verify --deep --strict build/DerivedData/Build/Products/Release/CodexGauge.app
+
+      - name: Zip app
+        run: |
+          mkdir -p build/artifacts
+          ditto -c -k --keepParent \
+            build/DerivedData/Build/Products/Release/CodexGauge.app \
+            build/artifacts/CodexGauge.app.zip
+
+      - name: Upload app artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CodexGauge-app
+          path: build/artifacts/CodexGauge.app.zip
+          if-no-files-found: error

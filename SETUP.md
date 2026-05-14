@@ -40,6 +40,19 @@ The workflow runs on a hosted macOS machine and checks:
 - `CodexGaugeProbe`
 - native Xcode app target build with code signing disabled
 
+## Get A Downloadable App
+
+Use the `Build App` GitHub Actions workflow:
+
+1. Go to `Actions` -> `Build App`.
+2. Click `Run workflow`.
+3. Wait for the run to complete.
+4. Download the `CodexGauge-app` artifact.
+5. Unzip `CodexGauge.app.zip`.
+6. Open `CodexGauge.app`.
+
+This produces the real macOS app bundle. It is ad-hoc signed rather than Developer ID notarized, so Gatekeeper may ask you to right-click and choose `Open` on first launch.
+
 ## Usage Detection Notes
 
 Codex Gauge looks for local Codex data under `~/.codex`.

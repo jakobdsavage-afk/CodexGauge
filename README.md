@@ -70,6 +70,19 @@ From GitHub:
 
 The macOS runner validates the project files, builds the Swift package, runs `CodexGaugeProbe`, and builds the native Xcode target with code signing disabled.
 
+## Download The App From GitHub
+
+GitHub Actions can also build a downloadable `.app` bundle:
+
+1. Open the repository's `Actions` tab.
+2. Choose `Build App`.
+3. Click `Run workflow`.
+4. Open the completed run.
+5. Download the `CodexGauge-app` artifact.
+6. Unzip it and open `CodexGauge.app`.
+
+The artifact is ad-hoc signed, not notarized with an Apple Developer ID. macOS may require right-clicking the app and choosing `Open` the first time.
+
 ## Run From Swift Package
 
 The project also includes a Swift Package manifest for lightweight local builds:
