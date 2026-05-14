@@ -25,6 +25,8 @@
 		AA0000000000000000000010 /* WidgetControlsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000110 /* WidgetControlsView.swift */; };
 		AA0000000000000000000011 /* GaugeWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000111 /* GaugeWidgetView.swift */; };
 		AA0000000000000000000012 /* CodexSessionRateLimitParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000112 /* CodexSessionRateLimitParserTests.swift */; };
+		AA0000000000000000000013 /* UpdaterService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000116 /* UpdaterService.swift */; };
+		AA0000000000000000000014 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = AA0000000000000000000A02 /* Sparkle */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -59,6 +61,7 @@
 		AA0000000000000000000113 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		AA0000000000000000000114 /* CodexGauge.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CodexGauge.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AA0000000000000000000115 /* CodexGaugeTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CodexGaugeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		AA0000000000000000000116 /* UpdaterService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdaterService.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -66,6 +69,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AA0000000000000000000014 /* Sparkle in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -127,6 +131,7 @@
 				AA0000000000000000000108 /* UsageRefreshService.swift */,
 				AA0000000000000000000109 /* LoginItemManager.swift */,
 				AA000000000000000000010A /* FloatingPanelController.swift */,
+				AA0000000000000000000116 /* UpdaterService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -186,6 +191,9 @@
 			dependencies = (
 			);
 			name = CodexGauge;
+			packageProductDependencies = (
+				AA0000000000000000000A02 /* Sparkle */,
+			);
 			productName = CodexGauge;
 			productReference = AA0000000000000000000114 /* CodexGauge.app */;
 			productType = "com.apple.product-type.application";
@@ -236,6 +244,9 @@
 				Base,
 			);
 			mainGroup = AA0000000000000000000601;
+			packageReferences = (
+				AA0000000000000000000A01 /* XCRemoteSwiftPackageReference "Sparkle" */,
+			);
 			productRefGroup = AA0000000000000000000609 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -285,6 +296,7 @@
 				AA000000000000000000000F /* GaugeRow.swift in Sources */,
 				AA0000000000000000000010 /* WidgetControlsView.swift in Sources */,
 				AA0000000000000000000011 /* GaugeWidgetView.swift in Sources */,
+				AA0000000000000000000013 /* UpdaterService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -305,6 +317,25 @@
 			targetProxy = AA0000000000000000000201 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		AA0000000000000000000A01 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sparkle-project/Sparkle.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.9.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		AA0000000000000000000A02 /* Sparkle */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AA0000000000000000000A01 /* XCRemoteSwiftPackageReference "Sparkle" */;
+			productName = Sparkle;
+		};
+/* End XCSwiftPackageProductDependency section */
 
 /* Begin XCBuildConfiguration section */
 		AA0000000000000000000901 /* Debug */ = {

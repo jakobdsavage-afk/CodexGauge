@@ -55,6 +55,14 @@ This produces the real macOS app bundle. It is ad-hoc signed rather than Develop
 
 For a public-ready download that works cleanly for everyone, use the `Release` workflow after adding the Apple Developer ID and notarization secrets described in `DISTRIBUTION.md`.
 
+## Auto Updates
+
+Codex Gauge bundles Sparkle 2. Users do not install Sparkle separately.
+
+Use GitHub `Actions` -> `Sparkle Release` to publish an update. Enter a version like `v1.0.1`; the workflow builds the app, signs the Sparkle update, generates `appcast.xml`, and attaches both files to a GitHub Release.
+
+Installed apps check for updates automatically and include a `Check for Updates...` menu item.
+
 ## Usage Detection Notes
 
 Codex Gauge looks for local Codex data under `~/.codex`.

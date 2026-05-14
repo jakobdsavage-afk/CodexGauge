@@ -6,6 +6,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let preferences = UserPreferences()
     private let refreshService = UsageRefreshService(provider: CodexProvider())
     private let loginItemManager = LoginItemManager()
+    private let updaterService = UpdaterService()
     private var panelController: FloatingPanelController?
     private var statusItem: NSStatusItem?
     private var cancellables: Set<AnyCancellable> = []
@@ -36,6 +37,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let menu = NSMenu()
         menu.addItem(NSMenuItem(title: "Show / Hide Codex Gauge", action: #selector(togglePanel), keyEquivalent: "g"))
         menu.addItem(NSMenuItem(title: "Refresh Now", action: #selector(refreshNow), keyEquivalent: "r"))
+        menu.addItem(NSMenuItem(title: "Check for Updates...", action: #selector(checkForUpdates), keyEquivalent: "u"))
         menu.addItem(NSMenuItem.separator())
 
         let topItem = NSMenuItem(title: "Always On Top", action: #selector(toggleAlwaysOnTop), keyEquivalent: "t")
@@ -80,6 +82,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func refreshNow() {
         Task { await refreshService.refreshNow() }
+    }
+
+    @objc private func checkForUpdates() {
+        updaterService.checkForUpdates()
     }
 
     @objc private func toggleAlwaysOnTop() {

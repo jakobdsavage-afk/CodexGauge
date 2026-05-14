@@ -32,6 +32,12 @@ jobs:
       - name: Run local-data probe
         run: swift run CodexGaugeProbe
 
+      - name: Resolve Xcode packages
+        run: |
+          xcodebuild \
+            -project CodexGauge.xcodeproj \
+            -resolvePackageDependencies
+
       - name: Build native macOS app target
         run: |
           xcodebuild \

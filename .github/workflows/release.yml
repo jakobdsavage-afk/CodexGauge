@@ -60,14 +60,26 @@ jobs:
             -k "$KEYCHAIN_PASSWORD" \
             "$KEYCHAIN_PATH"
 
+      - name: Resolve packages
+        run: |
+          swift package resolve
+          xcodebuild \
+            -project CodexGauge.xcodeproj \
+            -resolvePackageDependencies
+
       - name: Build Release app
         run: |
+          MARKETING="${{ inputs.version }}"
+          MARKETING="${MARKETING#v}"
+
           xcodebuild \
             -project CodexGauge.xcodeproj \
             -target CodexGauge \
             -configuration Release \
             SYMROOT=build \
             CODE_SIGNING_ALLOWED=NO \
+            MARKETING_VERSION="$MARKETING" \
+            CURRENT_PROJECT_VERSION="${{ github.run_number }}" \
             build
 
       - name: Sign app with Developer ID

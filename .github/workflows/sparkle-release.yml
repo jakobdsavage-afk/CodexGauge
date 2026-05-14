@@ -1,0 +1,92 @@
+name: Sparkle Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version, for example v1.0.1"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build Sparkle Update
+    runs-on: macos-15
+
+    env:
+      APP_NAME: CodexGauge
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Validate version input
+        run: |
+          if [[ ! "${{ inputs.version }}" =~ ^v[0-9]+\\.[0-9]+\\.[0-9]+$ ]]; then
+            echo "Version must look like v1.0.1"
+            exit 1
+          fi
+
+      - name: Resolve packages
+        run: |
+          swift package resolve
+          xcodebuild \
+            -project CodexGauge.xcodeproj \
+            -resolvePackageDependencies
+
+      - name: Build app
+        run: |
+          MARKETING="${{ inputs.version }}"
+          MARKETING="${MARKETING#v}"
+
+          xcodebuild \
+            -project CodexGauge.xcodeproj \
+            -target CodexGauge \
+            -configuration Release \
+            SYMROOT=build \
+            CODE_SIGNING_ALLOWED=NO \
+            MARKETING_VERSION="$MARKETING" \
+            CURRENT_PROJECT_VERSION="${{ github.run_number }}" \
+            build
+
+      - name: Ad-hoc sign app bundle
+        run: |
+          codesign --force --deep --sign - "build/Release/${APP_NAME}.app"
+          codesign --verify --deep --strict "build/Release/${APP_NAME}.app"
+
+      - name: Package update archive
+        run: |
+          mkdir -p build/sparkle
+          ditto -c -k --keepParent \
+            "build/Release/${APP_NAME}.app" \
+            "build/sparkle/${APP_NAME}-${{ inputs.version }}.zip"
+
+      - name: Generate Sparkle appcast
+        env:
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+        run: |
+          if [[ -z "$SPARKLE_PRIVATE_KEY" ]]; then
+            echo "Missing SPARKLE_PRIVATE_KEY secret."
+            exit 1
+          fi
+
+          echo "$SPARKLE_PRIVATE_KEY" | \
+            .build/artifacts/sparkle/Sparkle/bin/generate_appcast \
+              --ed-key-file - \
+              --download-url-prefix "https://github.com/${{ github.repository }}/releases/download/${{ inputs.version }}/" \
+              --link "https://github.com/${{ github.repository }}/releases/latest" \
+              -o build/sparkle/appcast.xml \
+              build/sparkle
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ inputs.version }}" \
+            "build/sparkle/${APP_NAME}-${{ inputs.version }}.zip" \
+            "build/sparkle/appcast.xml" \
+            --title "Codex Gauge ${{ inputs.version }}" \
+            --notes "Sparkle-enabled Codex Gauge update. Download the zip for first install; installed apps will use appcast.xml for future updates."

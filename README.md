@@ -46,6 +46,7 @@ CodexGauge/
 - `CodexProvider` is the first concrete provider and owns local Codex detection.
 - `UsageRefreshService` refreshes usage every 15 seconds.
 - `FloatingPanelController` owns the native always-visible panel, remembered position, opacity, and floating level.
+- `UpdaterService` owns Sparkle update checks.
 - SwiftUI views draw the hand-sketched notebook interface.
 
 Future providers can be added by implementing `UsageProvider` and swapping the provider passed into `UsageRefreshService`.
@@ -86,6 +87,14 @@ For internal testing, use `Build App`:
 The artifact is ad-hoc signed, not notarized with an Apple Developer ID. macOS may require right-clicking the app and choosing `Open` the first time.
 
 For public downloads, use the `Release` workflow instead. That workflow requires Apple Developer secrets, signs with Developer ID, notarizes with Apple, staples the ticket, and publishes a GitHub Release zip that normal users can open without the quarantine workaround. See `DISTRIBUTION.md`.
+
+## Automatic Updates
+
+Codex Gauge bundles Sparkle 2. Your dad does not install Sparkle separately.
+
+To publish an update, run the `Sparkle Release` workflow with a version like `v1.0.1`. The workflow builds the app, signs the update with Sparkle's private key, generates `appcast.xml`, and publishes both to GitHub Releases. Installed apps check that feed automatically and also expose `Check for Updates...` in the menu bar menu.
+
+See `AUTO_UPDATES.md`.
 
 ## Run From Swift Package
 

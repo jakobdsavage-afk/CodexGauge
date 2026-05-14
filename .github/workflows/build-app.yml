@@ -15,6 +15,13 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
+      - name: Resolve packages
+        run: |
+          swift package resolve
+          xcodebuild \
+            -project CodexGauge.xcodeproj \
+            -resolvePackageDependencies
+
       - name: Build Release app
         run: |
           xcodebuild \
