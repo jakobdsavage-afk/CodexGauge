@@ -67,10 +67,15 @@ final class FloatingPanelController: NSObject, NSWindowDelegate {
         panel.titlebarAppearsTransparent = true
         panel.isMovableByWindowBackground = true
         panel.isReleasedWhenClosed = false
+        // NSPanel defaults are tuned for transient utility panels. A desktop
+        // widget should remain visible when the user clicks into another app.
+        panel.hidesOnDeactivate = false
+        panel.isFloatingPanel = true
+        panel.becomesKeyOnlyIfNeeded = true
         panel.backgroundColor = .clear
         panel.isOpaque = false
         panel.hasShadow = true
-        panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+        panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary]
         panel.delegate = self
         panel.contentView = NSHostingView(rootView: contentView)
         applyFloatingLevel(to: panel)
