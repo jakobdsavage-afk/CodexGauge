@@ -193,6 +193,10 @@ struct LeaderboardView: View {
                 }
             }
 
+            if score.codexBurnedPercent == nil {
+                missingFuelActions(for: score, palette: palette)
+            }
+
             if let errorMessage = score.errorMessage {
                 Text(errorMessage)
                     .font(.system(size: 11, weight: .semibold, design: .rounded))
@@ -219,6 +223,30 @@ struct LeaderboardView: View {
             }
             .disabled(!isLocalPerson(score.person))
         }
+    }
+
+    private func missingFuelActions(for score: BuildEfficiencyScore, palette: NotebookPalette) -> some View {
+        HStack(spacing: 8) {
+            Text("No score yet. Add Codex fuel.")
+                .font(.system(size: 10, weight: .bold, design: .rounded))
+                .foregroundStyle(palette.dimInk)
+
+            Spacer()
+
+            if refreshService.snapshot.weeklyUsagePercent != nil {
+                Button("Use This Mac") {
+                    savePersonAndRefresh(score.person.withCodexUsage(mode: .localGauge, manualPercent: nil))
+                }
+                .buttonStyle(SketchPlainTextButtonStyle(palette: palette))
+                .help("Use this Mac's current weekly Codex burned percent")
+            }
+
+            Button("Set Fuel") {
+                activeSheet = .edit(score.person.withCodexUsage(mode: .manual, manualPercent: nil))
+            }
+            .buttonStyle(SketchPlainTextButtonStyle(palette: palette))
+        }
+        .padding(.top, 2)
     }
 
     private func metric(_ label: String, _ value: String, palette: NotebookPalette) -> some View {

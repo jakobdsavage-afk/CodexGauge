@@ -46,6 +46,12 @@ struct LeaderboardSettingsView: View {
 
                 if usageMode == .manual {
                     labeledField("Weekly Codex burned %", text: $manualBurnedPercent, palette: palette)
+
+                    if manualBurnedValue == nil {
+                        Text("Add a number from 0 to 100 so this builder can get a score.")
+                            .font(.system(size: 10, weight: .semibold, design: .rounded))
+                            .foregroundStyle(palette.dimInk)
+                    }
                 } else {
                     Text("Uses this Mac's current Codex weekly burned percent.")
                         .font(.system(size: 11, weight: .medium, design: .rounded))
@@ -100,20 +106,29 @@ struct LeaderboardSettingsView: View {
     private var canSave: Bool {
         !displayName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             && !LeaderboardPerson.normalizedGitHubUsername(from: githubProfile).isEmpty
+            && (usageMode == .localGauge || manualBurnedValue != nil)
     }
 
     private func save() {
-        let burnedPercent = Double(manualBurnedPercent.trimmingCharacters(in: .whitespacesAndNewlines))
-            .map { min(100, max(0, $0)) }
         let updated = LeaderboardPerson(
             id: person?.id ?? UUID(),
             displayName: displayName.trimmingCharacters(in: .whitespacesAndNewlines),
             githubProfile: githubProfile.trimmingCharacters(in: .whitespacesAndNewlines),
             codexUsageMode: usageMode,
-            manualWeeklyCodexBurnedPercent: usageMode == .manual ? burnedPercent : nil
+            manualWeeklyCodexBurnedPercent: usageMode == .manual ? manualBurnedValue : nil
         )
         onSave(updated)
         dismiss()
+    }
+
+    private var manualBurnedValue: Double? {
+        guard let value = Double(manualBurnedPercent.trimmingCharacters(in: .whitespacesAndNewlines)),
+              (0...100).contains(value)
+        else {
+            return nil
+        }
+
+        return value
     }
 }
 

@@ -29,6 +29,16 @@ struct LeaderboardPerson: Identifiable, Codable, Equatable {
         !githubUsername.isEmpty
     }
 
+    func withCodexUsage(mode: LeaderboardCodexUsageMode, manualPercent: Double?) -> LeaderboardPerson {
+        LeaderboardPerson(
+            id: id,
+            displayName: displayName,
+            githubProfile: githubProfile,
+            codexUsageMode: mode,
+            manualWeeklyCodexBurnedPercent: manualPercent
+        )
+    }
+
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self.displayName = try container.decode(String.self, forKey: .displayName)
