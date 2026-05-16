@@ -30,7 +30,29 @@ final class LeaderboardScoringTests: XCTestCase {
             LeaderboardPerson.normalizedGitHubUsername(from: "https://github.com/jakobdsavage-afk"),
             "jakobdsavage-afk"
         )
+        XCTAssertEqual(
+            LeaderboardPerson.normalizedGitHubUsername(from: "github.com/jakobdsavage-afk"),
+            "jakobdsavage-afk"
+        )
         XCTAssertEqual(LeaderboardPerson.normalizedGitHubUsername(from: "@octocat"), "octocat")
         XCTAssertEqual(LeaderboardPerson.normalizedGitHubUsername(from: " octocat "), "octocat")
+        XCTAssertEqual(LeaderboardPerson.normalizedGitHubUsername(from: "octocat/projects"), "octocat")
+    }
+
+    func testSharedLeaderboardPersonCanDecodeWithoutIdOrCodexBurnedPercent() throws {
+        let data = """
+        {
+          "displayName": "Dad",
+          "githubProfile": "github.com/octocat",
+          "codexUsageMode": "manual"
+        }
+        """.data(using: .utf8)!
+
+        let person = try JSONDecoder().decode(LeaderboardPerson.self, from: data)
+
+        XCTAssertFalse(person.id.uuidString.isEmpty)
+        XCTAssertEqual(person.displayName, "Dad")
+        XCTAssertEqual(person.githubUsername, "octocat")
+        XCTAssertNil(person.manualWeeklyCodexBurnedPercent)
     }
 }

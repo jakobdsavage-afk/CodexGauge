@@ -29,6 +29,15 @@ struct LeaderboardPerson: Identifiable, Codable, Equatable {
         !githubUsername.isEmpty
     }
 
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.id = try container.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+        self.displayName = try container.decode(String.self, forKey: .displayName)
+        self.githubProfile = try container.decode(String.self, forKey: .githubProfile)
+        self.codexUsageMode = try container.decodeIfPresent(LeaderboardCodexUsageMode.self, forKey: .codexUsageMode) ?? .manual
+        self.manualWeeklyCodexBurnedPercent = try container.decodeIfPresent(Double.self, forKey: .manualWeeklyCodexBurnedPercent)
+    }
+
     static func normalizedGitHubUsername(from value: String) -> String {
         let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
@@ -43,10 +52,31 @@ struct LeaderboardPerson: Identifiable, Codable, Equatable {
                 ?? ""
         }
 
-        return trimmed
+        let stripped = trimmed
             .replacingOccurrences(of: "https://github.com/", with: "")
             .replacingOccurrences(of: "http://github.com/", with: "")
             .trimmingCharacters(in: CharacterSet(charactersIn: "@/ "))
+
+        if stripped.hasPrefix("github.com/") {
+            return stripped
+                .replacingOccurrences(of: "github.com/", with: "")
+                .split(separator: "/")
+                .first
+                .map(String.init) ?? ""
+        }
+
+        return stripped
+            .split(separator: "/")
+            .first
+            .map(String.init) ?? ""
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case displayName
+        case githubProfile
+        case codexUsageMode
+        case manualWeeklyCodexBurnedPercent
     }
 }
 

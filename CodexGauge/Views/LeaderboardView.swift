@@ -30,8 +30,8 @@ struct LeaderboardView: View {
                 } else {
                     ScrollView {
                         VStack(alignment: .leading, spacing: 10) {
-                            ForEach(rankedScores.indices, id: \.self) { index in
-                                scoreRow(rankedScores[index], rank: index + 1, palette: palette)
+                            ForEach(Array(rankedScores.enumerated()), id: \.element.id) { index, score in
+                                scoreRow(score, rank: index + 1, palette: palette)
                             }
                         }
                         .padding(.trailing, 4)
@@ -126,11 +126,13 @@ struct LeaderboardView: View {
     }
 
     private func scoreRow(_ score: BuildEfficiencyScore, rank: Int, palette: NotebookPalette) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+        let isWinner = rank == 1 && score.isScorable
+
+        return VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .center, spacing: 10) {
-                Image(systemName: rank == 1 ? "crown.fill" : "\(rank).circle")
+                Image(systemName: isWinner ? "crown.fill" : "\(rank).circle")
                     .font(.system(size: 17, weight: .bold))
-                    .foregroundStyle(rank == 1 ? palette.brightInk : palette.dimInk)
+                    .foregroundStyle(isWinner ? palette.brightInk : palette.dimInk)
                     .frame(width: 24)
 
                 VStack(alignment: .leading, spacing: 2) {
@@ -151,7 +153,7 @@ struct LeaderboardView: View {
                         .monospacedDigit()
                         .foregroundStyle(palette.brightInk)
 
-                    Text(rank == 1 && score.isScorable ? "Weekly Winner" : "AI Fuel Score")
+                    Text(isWinner ? "Weekly Winner" : "AI Fuel Score")
                         .font(.system(size: 10, weight: .bold, design: .rounded))
                         .foregroundStyle(palette.dimInk)
                 }
@@ -159,7 +161,7 @@ struct LeaderboardView: View {
 
             HStack(spacing: 13) {
                 metric("GitHub", "\(score.activityPoints) pts", palette: palette)
-                metric("Codex burned", score.codexBurnedPercent.map { "\(Int($0.rounded()))%" } ?? "Add %", palette: palette)
+                metric("Codex burned", codexBurnedText(for: score), palette: palette)
 
                 if let activity = score.activity {
                     metric("PRs", "\(activity.pullRequestsOpened)", palette: palette)
@@ -207,6 +209,14 @@ struct LeaderboardView: View {
                 .monospacedDigit()
                 .foregroundStyle(palette.ink.opacity(0.9))
         }
+    }
+
+    private func codexBurnedText(for score: BuildEfficiencyScore) -> String {
+        guard let codexBurnedPercent = score.codexBurnedPercent else {
+            return isLocalPerson(score.person) ? "Add %" : "Fuel TBD"
+        }
+
+        return "\(Int(codexBurnedPercent.rounded()))%"
     }
 
     private func footer(palette: NotebookPalette) -> some View {
