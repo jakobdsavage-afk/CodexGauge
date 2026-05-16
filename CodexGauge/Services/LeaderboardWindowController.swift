@@ -25,8 +25,7 @@ final class LeaderboardWindowController: NSObject, NSWindowDelegate {
     }
 
     func windowShouldClose(_ sender: NSWindow) -> Bool {
-        sender.orderOut(nil)
-        return false
+        true
     }
 
     private func makePanel() -> NSPanel {

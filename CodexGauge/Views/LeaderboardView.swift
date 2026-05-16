@@ -103,6 +103,14 @@ struct LeaderboardView: View {
             }
             .buttonStyle(SketchIconButtonStyle())
             .help("Refresh leaderboard")
+
+            Button {
+                NSApp.keyWindow?.performClose(nil)
+            } label: {
+                Image(systemName: "xmark")
+            }
+            .buttonStyle(SketchIconButtonStyle())
+            .help("Close leaderboard")
         }
     }
 
