@@ -55,4 +55,19 @@ final class LeaderboardScoringTests: XCTestCase {
         XCTAssertEqual(person.githubUsername, "octocat")
         XCTAssertNil(person.manualWeeklyCodexBurnedPercent)
     }
+
+    func testSharedLeaderboardMissingIdDecodesStableIdentifier() throws {
+        let data = """
+        {
+          "displayName": "Dad",
+          "githubProfile": "github.com/octocat",
+          "codexUsageMode": "manual"
+        }
+        """.data(using: .utf8)!
+
+        let first = try JSONDecoder().decode(LeaderboardPerson.self, from: data)
+        let second = try JSONDecoder().decode(LeaderboardPerson.self, from: data)
+
+        XCTAssertEqual(first.id, second.id)
+    }
 }

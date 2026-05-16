@@ -31,11 +31,12 @@ struct LeaderboardPerson: Identifiable, Codable, Equatable {
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        self.id = try container.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
         self.displayName = try container.decode(String.self, forKey: .displayName)
         self.githubProfile = try container.decode(String.self, forKey: .githubProfile)
         self.codexUsageMode = try container.decodeIfPresent(LeaderboardCodexUsageMode.self, forKey: .codexUsageMode) ?? .manual
         self.manualWeeklyCodexBurnedPercent = try container.decodeIfPresent(Double.self, forKey: .manualWeeklyCodexBurnedPercent)
+        self.id = try container.decodeIfPresent(UUID.self, forKey: .id)
+            ?? Self.stableID(displayName: displayName, githubProfile: githubProfile)
     }
 
     static func normalizedGitHubUsername(from value: String) -> String {
@@ -77,6 +78,37 @@ struct LeaderboardPerson: Identifiable, Codable, Equatable {
         case githubProfile
         case codexUsageMode
         case manualWeeklyCodexBurnedPercent
+    }
+
+    private static func stableID(displayName: String, githubProfile: String) -> UUID {
+        let key = normalizedGitHubUsername(from: githubProfile).isEmpty
+            ? displayName.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            : normalizedGitHubUsername(from: githubProfile).lowercased()
+        let first = fnv1a64("codex-gauge-a:\(key)")
+        let second = fnv1a64("codex-gauge-b:\(key)")
+        let bytes = Array(first.bigEndianBytes + second.bigEndianBytes)
+
+        return UUID(uuid: (
+            bytes[0], bytes[1], bytes[2], bytes[3],
+            bytes[4], bytes[5], bytes[6], bytes[7],
+            bytes[8], bytes[9], bytes[10], bytes[11],
+            bytes[12], bytes[13], bytes[14], bytes[15]
+        ))
+    }
+
+    private static func fnv1a64(_ value: String) -> UInt64 {
+        var hash: UInt64 = 0xcbf29ce484222325
+        for byte in value.utf8 {
+            hash ^= UInt64(byte)
+            hash = hash &* 0x100000001b3
+        }
+        return hash
+    }
+}
+
+private extension UInt64 {
+    var bigEndianBytes: [UInt8] {
+        withUnsafeBytes(of: bigEndian) { Array($0) }
     }
 }
 

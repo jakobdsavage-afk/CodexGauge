@@ -7,10 +7,10 @@ struct LeaderboardView: View {
 
     @State private var scores: [UUID: BuildEfficiencyScore] = [:]
     @State private var sharedPeople: [LeaderboardPerson] = []
+    @State private var hasLoadedSharedPeople = false
     @State private var isRefreshing = false
     @State private var needsRefreshAfterCurrentRun = false
-    @State private var editingPerson: LeaderboardPerson?
-    @State private var isAddingPerson = false
+    @State private var activeSheet: LeaderboardSheet?
     @State private var statusMessage = "Approximate score based on public GitHub activity."
 
     private let githubProvider = GitHubProvider()
@@ -25,7 +25,9 @@ struct LeaderboardView: View {
             VStack(alignment: .leading, spacing: 16) {
                 header(palette: palette)
 
-                if leaderboardPeople.isEmpty {
+                if leaderboardPeople.isEmpty && !hasLoadedSharedPeople {
+                    loadingState(palette: palette)
+                } else if leaderboardPeople.isEmpty {
                     emptyState(palette: palette)
                 } else {
                     ScrollView {
@@ -43,14 +45,8 @@ struct LeaderboardView: View {
             .padding(28)
         }
         .frame(width: 560, height: 430)
-        .sheet(item: $editingPerson) { person in
-            LeaderboardSettingsView(person: person) { updated in
-                savePersonAndRefresh(updated)
-            }
-            .environmentObject(preferences)
-        }
-        .sheet(isPresented: $isAddingPerson) {
-            LeaderboardSettingsView(person: nil) { person in
+        .sheet(item: $activeSheet) { sheet in
+            LeaderboardSettingsView(person: sheet.person) { person in
                 savePersonAndRefresh(person)
             }
             .environmentObject(preferences)
@@ -92,7 +88,7 @@ struct LeaderboardView: View {
             Spacer()
 
             Button {
-                isAddingPerson = true
+                activeSheet = .add
             } label: {
                 Label("Add", systemImage: "plus")
             }
@@ -106,6 +102,23 @@ struct LeaderboardView: View {
             .buttonStyle(SketchIconButtonStyle())
             .help("Refresh leaderboard")
         }
+    }
+
+    private func loadingState(palette: NotebookPalette) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            ProgressView()
+                .controlSize(.small)
+                .tint(palette.brightInk)
+
+            Text("Loading shared builders...")
+                .font(.system(size: 14, weight: .semibold, design: .rounded))
+                .foregroundStyle(palette.ink.opacity(0.9))
+
+            Text("Pulling the friendly build duel list from GitHub.")
+                .font(.system(size: 12, weight: .medium, design: .rounded))
+                .foregroundStyle(palette.dimInk)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
     }
 
     private func emptyState(palette: NotebookPalette) -> some View {
@@ -187,7 +200,7 @@ struct LeaderboardView: View {
         }
         .contextMenu {
             Button("Edit") {
-                editingPerson = score.person
+                activeSheet = .edit(score.person)
             }
 
             Button("Delete") {
@@ -261,6 +274,7 @@ struct LeaderboardView: View {
         } catch {
             sharedLoadFailed = true
         }
+        hasLoadedSharedPeople = true
 
         var nextScores: [UUID: BuildEfficiencyScore] = [:]
 
@@ -363,6 +377,29 @@ struct LeaderboardView: View {
             return refreshService.snapshot.weeklyUsagePercent
         case .manual:
             return person.manualWeeklyCodexBurnedPercent
+        }
+    }
+}
+
+private enum LeaderboardSheet: Identifiable {
+    case add
+    case edit(LeaderboardPerson)
+
+    var id: String {
+        switch self {
+        case .add:
+            return "add"
+        case .edit(let person):
+            return "edit-\(person.id.uuidString)"
+        }
+    }
+
+    var person: LeaderboardPerson? {
+        switch self {
+        case .add:
+            return nil
+        case .edit(let person):
+            return person
         }
     }
 }
