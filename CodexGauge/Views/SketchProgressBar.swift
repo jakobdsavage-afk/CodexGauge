@@ -1,10 +1,15 @@
 import SwiftUI
 
 struct SketchProgressBar: View {
+    @EnvironmentObject private var preferences: UserPreferences
+
     let value: Double
     let phase: Double
+    let height: CGFloat
 
     var body: some View {
+        let palette = NotebookTheme.palette(for: preferences.theme)
+
         Canvas { context, size in
             let rect = CGRect(origin: .zero, size: size).insetBy(dx: 1, dy: 5)
             let progressWidth = rect.width * min(1, max(0, value / 100))
@@ -13,7 +18,7 @@ struct SketchProgressBar: View {
                 var border = Path()
                 let yOffset = CGFloat(line) * 0.9
                 border.addRoundedRect(in: rect.offsetBy(dx: 0, dy: yOffset), cornerSize: CGSize(width: 5, height: 5))
-                context.stroke(border, with: .color(NotebookTheme.ink.opacity(0.42)), lineWidth: 0.85)
+                context.stroke(border, with: .color(palette.ink.opacity(0.42)), lineWidth: 0.85)
             }
 
             guard progressWidth > 1 else {
@@ -29,8 +34,8 @@ struct SketchProgressBar: View {
                 fill.addLine(to: CGPoint(x: fillRect.maxX, y: index - jitter * 0.4))
             }
 
-            context.stroke(fill, with: .color(NotebookTheme.brightInk.opacity(0.82)), lineWidth: 1.25)
+            context.stroke(fill, with: .color(palette.brightInk.opacity(0.82)), lineWidth: 1.25)
         }
-        .frame(height: 18)
+        .frame(height: height)
     }
 }

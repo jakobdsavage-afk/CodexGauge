@@ -18,6 +18,18 @@ If macOS says Apple cannot verify the app, right-click `CodexGauge.app`, choose 
 
 Future updates install through the app automatically.
 
+## Premium Widget Controls
+
+Codex Gauge keeps its controls small so the widget still feels like a desktop instrument, not a settings panel.
+
+- Themes: `Notebook Green`, `Amber Terminal`, `Blue Lab`, and `Red Alert`
+- Widget sizes: `Tiny`, `Normal`, and `Expanded`
+- Pin modes: `Floating`, `Desktop`, and `Menu Bar Only`
+- Text modes: handwritten notebook text or a cleaner rounded system font
+- First-run data source note explaining how real usage is detected
+
+These settings are available from the widget controls and from the menu bar icon.
+
 ## What It Reads
 
 The current provider is `CodexProvider`.
@@ -68,6 +80,7 @@ CodexGauge/
 - `UsageRefreshService` refreshes usage every 10 seconds.
 - `FloatingPanelController` owns the native always-visible panel, remembered position, opacity, and floating level.
 - `UpdaterService` owns Sparkle update checks.
+- `UserPreferences` stores theme, size, pin mode, typography, opacity, launch-at-login, and first-run state.
 - SwiftUI views draw the hand-sketched notebook interface.
 
 Future providers can be added by implementing `UsageProvider` and swapping the provider passed into `UsageRefreshService`.

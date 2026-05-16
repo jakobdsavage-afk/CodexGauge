@@ -1,17 +1,21 @@
 import SwiftUI
 
 struct SketchBackground: View {
+    @EnvironmentObject private var preferences: UserPreferences
+
     let phase: Double
 
     var body: some View {
+        let palette = NotebookTheme.palette(for: preferences.theme)
+
         Canvas { context, size in
             let rect = CGRect(origin: .zero, size: size).insetBy(dx: 11, dy: 11)
 
             let paper = GraphicsContext.Shading.linearGradient(
                 Gradient(colors: [
-                    NotebookTheme.paperLift.opacity(0.98),
-                    NotebookTheme.paper.opacity(0.98),
-                    NotebookTheme.paperGroove.opacity(0.98)
+                    palette.paperLift.opacity(0.98),
+                    palette.paper.opacity(0.98),
+                    palette.paperGroove.opacity(0.98)
                 ]),
                 startPoint: CGPoint(x: rect.minX, y: rect.minY),
                 endPoint: CGPoint(x: rect.maxX, y: rect.maxY)
@@ -27,7 +31,7 @@ struct SketchBackground: View {
             leftBinding.addLine(to: CGPoint(x: rect.minX + 10 + wobble(4, phase), y: rect.maxY - 18))
             context.stroke(
                 leftBinding,
-                with: .color(NotebookTheme.ink.opacity(0.18)),
+                with: .color(palette.ink.opacity(0.18)),
                 style: StrokeStyle(lineWidth: 1.1, lineCap: .round)
             )
 
@@ -42,7 +46,7 @@ struct SketchBackground: View {
 
                 context.stroke(
                     path,
-                    with: .color(NotebookTheme.ink.opacity(layer == 0 ? 0.82 : 0.26)),
+                    with: .color(palette.ink.opacity(layer == 0 ? 0.82 : 0.26)),
                     style: StrokeStyle(lineWidth: layer == 0 ? 1.55 : 0.8, lineCap: .round, lineJoin: .round)
                 )
             }
@@ -51,7 +55,7 @@ struct SketchBackground: View {
                 var line = Path()
                 line.move(to: CGPoint(x: rect.minX + 20, y: y + wobble(y, phase) * 0.6))
                 line.addLine(to: CGPoint(x: rect.maxX - 12, y: y + wobble(y + 8, phase) * 0.6))
-                context.stroke(line, with: .color(NotebookTheme.dimInk.opacity(0.08)), lineWidth: 0.7)
+                context.stroke(line, with: .color(palette.dimInk.opacity(0.08)), lineWidth: 0.7)
             }
         }
     }

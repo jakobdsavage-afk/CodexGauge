@@ -21,6 +21,11 @@ final class FloatingPanelController: NSObject, NSWindowDelegate {
             bindPreferences()
         }
 
+        guard preferences.pinMode != .menuBarOnly else {
+            panel?.orderOut(nil)
+            return
+        }
+
         panel?.makeKeyAndOrderFront(nil)
         NSApp.activate()
     }
@@ -30,6 +35,12 @@ final class FloatingPanelController: NSObject, NSWindowDelegate {
     }
 
     func toggleVisibility() {
+        if preferences.pinMode == .menuBarOnly {
+            preferences.pinMode = .floating
+            show()
+            return
+        }
+
         guard let panel else {
             show()
             return
@@ -78,19 +89,24 @@ final class FloatingPanelController: NSObject, NSWindowDelegate {
         panel.contentView = NSHostingView(rootView: contentView)
         panel.contentMinSize = widgetSize
         panel.contentMaxSize = widgetSize
-        applyFloatingLevel(to: panel)
+        applyPinMode(to: panel)
         panel.alphaValue = preferences.panelOpacity
 
         return panel
     }
 
     private func bindPreferences() {
-        preferences.$alwaysOnTop
-            .sink { [weak self] _ in
+        preferences.$pinMode
+            .sink { [weak self] pinMode in
                 guard let self, let panel = self.panel else {
                     return
                 }
-                self.applyFloatingLevel(to: panel)
+                self.applyPinMode(to: panel)
+                if pinMode == .menuBarOnly {
+                    panel.orderOut(nil)
+                } else if !panel.isVisible {
+                    panel.makeKeyAndOrderFront(nil)
+                }
             }
             .store(in: &cancellables)
 
@@ -99,10 +115,43 @@ final class FloatingPanelController: NSObject, NSWindowDelegate {
                 self?.panel?.alphaValue = opacity
             }
             .store(in: &cancellables)
+
+        preferences.$widgetSizeMode
+            .dropFirst()
+            .sink { [weak self] _ in
+                self?.resizePanelForCurrentMode()
+            }
+            .store(in: &cancellables)
     }
 
-    private func applyFloatingLevel(to panel: NSPanel) {
-        panel.level = preferences.alwaysOnTop ? .floating : .normal
+    private func applyPinMode(to panel: NSPanel) {
+        switch preferences.pinMode {
+        case .floating:
+            panel.level = .floating
+        case .desktop, .menuBarOnly:
+            panel.level = .normal
+        }
+    }
+
+    private func resizePanelForCurrentMode() {
+        guard let panel else {
+            return
+        }
+
+        let currentFrame = panel.frame
+        let size = widgetSize
+        var nextFrame = CGRect(
+            x: currentFrame.maxX - size.width,
+            y: currentFrame.maxY - size.height,
+            width: size.width,
+            height: size.height
+        )
+        nextFrame = frameInsideVisibleScreen(nextFrame)
+
+        panel.contentMinSize = size
+        panel.contentMaxSize = size
+        panel.setFrame(nextFrame, display: true, animate: true)
+        preferences.saveFrame(nextFrame)
     }
 
     private func launchFrame() -> CGRect {
@@ -139,6 +188,6 @@ final class FloatingPanelController: NSObject, NSWindowDelegate {
     }
 
     private var widgetSize: CGSize {
-        CGSize(width: 372, height: 248)
+        preferences.widgetSizeMode.size
     }
 }
