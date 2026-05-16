@@ -49,7 +49,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func makeStatusMenu() -> NSMenu {
         let menu = NSMenu()
         menu.addItem(NSMenuItem(title: "Show / Hide Codex Gauge", action: #selector(togglePanel), keyEquivalent: "g"))
-        menu.addItem(NSMenuItem(title: "Build Efficiency Leaderboard", action: #selector(showLeaderboard), keyEquivalent: "b"))
+        menu.addItem(NSMenuItem(title: "Builder Board • This Week", action: #selector(showLeaderboard), keyEquivalent: "b"))
         menu.addItem(NSMenuItem(title: "Refresh Now", action: #selector(refreshNow), keyEquivalent: "r"))
         menu.addItem(NSMenuItem(title: "Check for Updates...", action: #selector(checkForUpdates), keyEquivalent: "u"))
         menu.addItem(NSMenuItem.separator())

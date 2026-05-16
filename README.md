@@ -30,9 +30,9 @@ Codex Gauge keeps its controls small so the widget still feels like a desktop in
 
 These settings are available from the widget controls and from the menu bar icon.
 
-## V2 Experiment: Build Efficiency Leaderboard
+## V2 Experiment: Builder Board • This Week
 
-The optional leaderboard is a local-only experiment for friendly coding competition.
+The optional Builder Board is a local-only experiment for friendly weekly coding competition.
 
 It compares:
 
@@ -53,7 +53,7 @@ Manual additions in the app are still supported, but they stay local to that Mac
 Scoring:
 
 ```text
-Build Efficiency = GitHub weekly activity points / max(weekly Codex burned percent, 1) * 100
+Builder Score = GitHub weekly activity points / max(weekly Codex burned percent, 1) * 100
 ```
 
 Activity points:

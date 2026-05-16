@@ -33,7 +33,7 @@ enum SharedLeaderboardError: LocalizedError {
     case unavailable
 
     var errorDescription: String? {
-        "Could not load the shared leaderboard list right now."
+        "Could not load the shared Builder Board list right now."
     }
 }
 

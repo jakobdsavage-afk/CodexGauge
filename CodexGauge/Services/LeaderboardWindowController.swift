@@ -49,7 +49,7 @@ final class LeaderboardWindowController: NSObject, NSWindowDelegate {
             backing: .buffered,
             defer: false
         )
-        panel.title = "Build Efficiency Leaderboard"
+        panel.title = "Builder Board • This Week"
         panel.titlebarAppearsTransparent = false
         panel.titleVisibility = .visible
         panel.isMovableByWindowBackground = true

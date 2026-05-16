@@ -81,13 +81,13 @@ struct LeaderboardView: View {
     private func header(palette: NotebookPalette) -> some View {
         HStack(alignment: .center, spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
-                Text("Build Efficiency Leaderboard")
+                Text("Builder Board")
                     .notebookFont(size: 28, weight: .bold, handwritten: preferences.useHandwrittenFont)
                     .foregroundStyle(palette.brightInk)
                     .lineLimit(1)
                     .minimumScaleFactor(0.78)
 
-                Text("Shipped vs Burned")
+                Text("This Week")
                     .font(.system(size: 12, weight: .bold, design: .rounded))
                     .foregroundStyle(palette.dimInk)
             }
@@ -107,7 +107,7 @@ struct LeaderboardView: View {
                 Image(systemName: isRefreshing ? "hourglass" : "arrow.clockwise")
             }
             .buttonStyle(SketchIconButtonStyle())
-            .help("Refresh leaderboard")
+            .help("Refresh Builder Board")
 
             Button {
                 closeLeaderboardWindow()
@@ -115,7 +115,7 @@ struct LeaderboardView: View {
                 Image(systemName: "xmark")
             }
             .buttonStyle(SketchIconButtonStyle())
-            .help("Close leaderboard")
+            .help("Close Builder Board")
         }
     }
 
@@ -293,7 +293,7 @@ struct LeaderboardView: View {
 
             Spacer()
 
-            Text("Build Efficiency = GitHub pts / Codex burned")
+            Text("Builder Score = GitHub pts / Codex burned")
                 .font(.system(size: 10, weight: .bold, design: .rounded))
                 .foregroundStyle(palette.ink.opacity(0.62))
                 .lineLimit(1)
@@ -432,7 +432,7 @@ struct LeaderboardView: View {
 
     private func footerStatus(sharedLoadFailed: Bool) -> String {
         if sharedLoadFailed {
-            return "Using local leaderboard list. Shared list could not load."
+            return "Using local Builder Board list. Shared list could not load."
         }
 
         if let username = localIdentity.githubUsername, !username.isEmpty {
@@ -443,13 +443,13 @@ struct LeaderboardView: View {
     }
 
     private func closeLeaderboardWindow() {
-        if let window = NSApp.keyWindow, window.title == "Build Efficiency Leaderboard" {
+        if let window = NSApp.keyWindow, window.title == "Builder Board • This Week" {
             window.close()
             return
         }
 
         NSApp.windows
-            .first { $0.title == "Build Efficiency Leaderboard" }?
+            .first { $0.title == "Builder Board • This Week" }?
             .close()
     }
 }
