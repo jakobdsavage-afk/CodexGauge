@@ -5,6 +5,7 @@ struct LeaderboardSettingsView: View {
     @Environment(\.dismiss) private var dismiss
 
     let person: LeaderboardPerson?
+    let localCodexBurnedPercent: Double?
     let onSave: (LeaderboardPerson) -> Void
 
     @State private var displayName: String
@@ -12,12 +13,13 @@ struct LeaderboardSettingsView: View {
     @State private var usageMode: LeaderboardCodexUsageMode
     @State private var manualBurnedPercent: String
 
-    init(person: LeaderboardPerson?, onSave: @escaping (LeaderboardPerson) -> Void) {
+    init(person: LeaderboardPerson?, localCodexBurnedPercent: Double?, onSave: @escaping (LeaderboardPerson) -> Void) {
         self.person = person
+        self.localCodexBurnedPercent = localCodexBurnedPercent
         self.onSave = onSave
         _displayName = State(initialValue: person?.displayName ?? "")
         _githubProfile = State(initialValue: person?.githubProfile ?? "")
-        _usageMode = State(initialValue: person?.codexUsageMode ?? .manual)
+        _usageMode = State(initialValue: Self.initialUsageMode(for: person))
         _manualBurnedPercent = State(initialValue: person?.manualWeeklyCodexBurnedPercent.map { String(Int($0.rounded())) } ?? "")
     }
 
@@ -37,23 +39,32 @@ struct LeaderboardSettingsView: View {
                     .font(.system(size: 11, weight: .bold, design: .rounded))
                     .foregroundStyle(palette.dimInk)
 
-                Picker("", selection: $usageMode) {
+                HStack(spacing: 8) {
                     ForEach(LeaderboardCodexUsageMode.allCases) { mode in
-                        Text(mode.title).tag(mode)
+                        Button {
+                            usageMode = mode
+                        } label: {
+                            Text(mode.title)
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(SketchSegmentButtonStyle(
+                            palette: palette,
+                            isSelected: usageMode == mode
+                        ))
                     }
                 }
-                .pickerStyle(.segmented)
 
                 if usageMode == .manual {
                     labeledField("Weekly Codex burned %", text: $manualBurnedPercent, palette: palette)
 
-                    if manualBurnedValue == nil {
+                    if manualBurnedValue == nil && !manualBurnedPercent.isEmpty {
                         Text("Add a number from 0 to 100 so this builder can get a score.")
                             .font(.system(size: 10, weight: .semibold, design: .rounded))
                             .foregroundStyle(palette.dimInk)
                     }
                 } else {
-                    Text("Uses this Mac's current Codex weekly burned percent.")
+                    Text(localCodexBurnedPercent.map { "Automatic: this Mac is at \(Int($0.rounded()))% weekly Codex burned." }
+                        ?? "Automatic: this will fill in as soon as Codex usage is available on this Mac.")
                         .font(.system(size: 11, weight: .medium, design: .rounded))
                         .foregroundStyle(palette.ink.opacity(0.72))
                 }
@@ -130,6 +141,18 @@ struct LeaderboardSettingsView: View {
 
         return value
     }
+
+    private static func initialUsageMode(for person: LeaderboardPerson?) -> LeaderboardCodexUsageMode {
+        guard let person else {
+            return .localGauge
+        }
+
+        if person.codexUsageMode == .manual && person.manualWeeklyCodexBurnedPercent == nil {
+            return .localGauge
+        }
+
+        return person.codexUsageMode
+    }
 }
 
 struct SketchPlainTextButtonStyle: ButtonStyle {
@@ -145,5 +168,27 @@ struct SketchPlainTextButtonStyle: ButtonStyle {
                 RoundedRectangle(cornerRadius: 6)
                     .stroke(palette.ink.opacity(configuration.isPressed ? 0.56 : 0.30), lineWidth: 1)
             }
+    }
+}
+
+struct SketchSegmentButtonStyle: ButtonStyle {
+    let palette: NotebookPalette
+    let isSelected: Bool
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.system(size: 12, weight: .black, design: .rounded))
+            .foregroundStyle(isSelected ? palette.paperGroove : palette.brightInk.opacity(0.86))
+            .padding(.horizontal, 10)
+            .padding(.vertical, 7)
+            .background {
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(isSelected ? palette.brightInk.opacity(configuration.isPressed ? 0.70 : 0.92) : palette.paperGroove.opacity(0.86))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 6)
+                            .stroke(palette.ink.opacity(isSelected ? 0.72 : 0.28), lineWidth: isSelected ? 1.15 : 0.8)
+                    }
+            }
+            .contentShape(Rectangle())
     }
 }

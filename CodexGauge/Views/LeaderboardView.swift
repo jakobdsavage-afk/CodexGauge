@@ -12,6 +12,7 @@ struct LeaderboardView: View {
     @State private var needsRefreshAfterCurrentRun = false
     @State private var activeSheet: LeaderboardSheet?
     @State private var statusMessage = "Approximate score based on public GitHub activity."
+    @State private var localIdentity = LocalDeveloperIdentity.current()
 
     private let githubProvider = GitHubProvider()
     private let sharedLeaderboardProvider = SharedLeaderboardProvider()
@@ -46,12 +47,16 @@ struct LeaderboardView: View {
         }
         .frame(width: 560, height: 430)
         .sheet(item: $activeSheet) { sheet in
-            LeaderboardSettingsView(person: sheet.person) { person in
+            LeaderboardSettingsView(
+                person: sheet.person,
+                localCodexBurnedPercent: refreshService.snapshot.weeklyUsagePercent
+            ) { person in
                 savePersonAndRefresh(person)
             }
             .environmentObject(preferences)
         }
         .task {
+            localIdentity = LocalDeveloperIdentity.current()
             await refreshScores()
         }
     }
@@ -105,7 +110,7 @@ struct LeaderboardView: View {
             .help("Refresh leaderboard")
 
             Button {
-                NSApp.keyWindow?.performClose(nil)
+                closeLeaderboardWindow()
             } label: {
                 Image(systemName: "xmark")
             }
@@ -195,6 +200,10 @@ struct LeaderboardView: View {
 
             if score.codexBurnedPercent == nil {
                 missingFuelActions(for: score, palette: palette)
+            } else if fuelResolver.usesLocalFuel(for: score.person) {
+                Text("Codex fuel is being read automatically from this Mac.")
+                    .font(.system(size: 10, weight: .semibold, design: .rounded))
+                    .foregroundStyle(palette.dimInk)
             }
 
             if let errorMessage = score.errorMessage {
@@ -264,10 +273,11 @@ struct LeaderboardView: View {
 
     private func codexBurnedText(for score: BuildEfficiencyScore) -> String {
         guard let codexBurnedPercent = score.codexBurnedPercent else {
-            return isLocalPerson(score.person) ? "Add %" : "Fuel TBD"
+            return fuelResolver.matchesLocalIdentity(score.person) ? "Waiting" : "Fuel TBD"
         }
 
-        return "\(Int(codexBurnedPercent.rounded()))%"
+        let suffix = fuelResolver.usesLocalFuel(for: score.person) ? " auto" : ""
+        return "\(Int(codexBurnedPercent.rounded()))%\(suffix)"
     }
 
     private func footer(palette: NotebookPalette) -> some View {
@@ -309,6 +319,8 @@ struct LeaderboardView: View {
             await refreshService.refreshNow()
         }
 
+        localIdentity = LocalDeveloperIdentity.current()
+
         var sharedLoadFailed = false
         do {
             sharedPeople = try await sharedLeaderboardProvider.fetchPeople()
@@ -349,9 +361,7 @@ struct LeaderboardView: View {
         }
 
         scores = nextScores
-        statusMessage = sharedLoadFailed
-            ? "Using local leaderboard list. Shared list could not load."
-            : "Approximate score based on public GitHub activity."
+        statusMessage = footerStatus(sharedLoadFailed: sharedLoadFailed)
     }
 
     private func savePersonAndRefresh(_ person: LeaderboardPerson) {
@@ -413,12 +423,34 @@ struct LeaderboardView: View {
     }
 
     private func codexBurnedPercent(for person: LeaderboardPerson) -> Double? {
-        switch person.codexUsageMode {
-        case .localGauge:
-            return refreshService.snapshot.weeklyUsagePercent
-        case .manual:
-            return person.manualWeeklyCodexBurnedPercent
+        fuelResolver.burnedPercent(for: person)
+    }
+
+    private var fuelResolver: LeaderboardFuelResolver {
+        LeaderboardFuelResolver(snapshot: refreshService.snapshot, localIdentity: localIdentity)
+    }
+
+    private func footerStatus(sharedLoadFailed: Bool) -> String {
+        if sharedLoadFailed {
+            return "Using local leaderboard list. Shared list could not load."
         }
+
+        if let username = localIdentity.githubUsername, !username.isEmpty {
+            return "Approximate score based on public GitHub activity. Local Codex fuel matched to @\(username)."
+        }
+
+        return "Approximate score based on public GitHub activity. Add yourself with Use This Mac for automatic fuel."
+    }
+
+    private func closeLeaderboardWindow() {
+        if let window = NSApp.keyWindow, window.title == "Build Efficiency Leaderboard" {
+            window.close()
+            return
+        }
+
+        NSApp.windows
+            .first { $0.title == "Build Efficiency Leaderboard" }?
+            .close()
     }
 }
 

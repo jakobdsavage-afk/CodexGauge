@@ -70,4 +70,67 @@ final class LeaderboardScoringTests: XCTestCase {
 
         XCTAssertEqual(first.id, second.id)
     }
+
+    func testGitHubCLIHostsFileProvidesLocalIdentity() {
+        let hosts = """
+        github.com:
+            git_protocol: https
+            users:
+                jakobdsavage-afk:
+            user: jakobdsavage-afk
+        """
+
+        XCTAssertEqual(
+            LocalDeveloperIdentity.githubUsername(fromGitHubHostsYAML: hosts),
+            "jakobdsavage-afk"
+        )
+    }
+
+    func testMissingManualFuelUsesLocalGaugeWhenGitHubMatchesThisMac() {
+        let person = LeaderboardPerson(
+            displayName: "Jake",
+            githubProfile: "jakobdsavage-afk",
+            codexUsageMode: .manual,
+            manualWeeklyCodexBurnedPercent: nil
+        )
+        let snapshot = UsageSnapshot(
+            dailyUsagePercent: 12,
+            weeklyUsagePercent: 34,
+            primaryWindowMinutes: 300,
+            secondaryWindowMinutes: 10_080,
+            lastUpdated: Date(),
+            providerStatus: .exact("Test")
+        )
+        let resolver = LeaderboardFuelResolver(
+            snapshot: snapshot,
+            localIdentity: LocalDeveloperIdentity(githubUsername: "jakobdsavage-afk", displayName: "Jake")
+        )
+
+        XCTAssertTrue(resolver.usesLocalFuel(for: person))
+        XCTAssertEqual(resolver.burnedPercent(for: person), 34)
+    }
+
+    func testMissingManualFuelDoesNotBorrowThisMacForAnotherGitHubUser() {
+        let person = LeaderboardPerson(
+            displayName: "Dad",
+            githubProfile: "dad-example",
+            codexUsageMode: .manual,
+            manualWeeklyCodexBurnedPercent: nil
+        )
+        let snapshot = UsageSnapshot(
+            dailyUsagePercent: 12,
+            weeklyUsagePercent: 34,
+            primaryWindowMinutes: 300,
+            secondaryWindowMinutes: 10_080,
+            lastUpdated: Date(),
+            providerStatus: .exact("Test")
+        )
+        let resolver = LeaderboardFuelResolver(
+            snapshot: snapshot,
+            localIdentity: LocalDeveloperIdentity(githubUsername: "jakobdsavage-afk", displayName: "Jake")
+        )
+
+        XCTAssertFalse(resolver.usesLocalFuel(for: person))
+        XCTAssertNil(resolver.burnedPercent(for: person))
+    }
 }
