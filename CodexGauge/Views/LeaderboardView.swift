@@ -49,7 +49,9 @@ struct LeaderboardView: View {
         .sheet(item: $activeSheet) { sheet in
             LeaderboardSettingsView(
                 person: sheet.person,
-                localCodexBurnedPercent: refreshService.snapshot.weeklyUsagePercent
+                title: sheet.title,
+                localCodexBurnedPercent: refreshService.snapshot.weeklyUsagePercent,
+                showsFuelControls: sheet.showsFuelControls
             ) { person in
                 savePersonAndRefresh(person)
             }
@@ -95,6 +97,14 @@ struct LeaderboardView: View {
             Spacer()
 
             Button {
+                activeSheet = .myGitHub(localProfileDraft)
+            } label: {
+                Label(localProfile == nil ? "Set My GitHub" : "My GitHub", systemImage: "person.crop.circle")
+            }
+            .buttonStyle(SketchPlainTextButtonStyle(palette: palette))
+            .help("Set the GitHub username for this Mac")
+
+            Button {
                 Task { await refreshScores() }
             } label: {
                 Image(systemName: isRefreshing ? "hourglass" : "arrow.clockwise")
@@ -135,13 +145,18 @@ struct LeaderboardView: View {
                 .font(.system(size: 28, weight: .bold))
                 .foregroundStyle(palette.brightInk)
 
-            Text("Builder Board updates from the shared weekly list.")
+            Text("Set your GitHub username to join this Mac's Builder Board.")
                 .font(.system(size: 14, weight: .semibold, design: .rounded))
                 .foregroundStyle(palette.ink.opacity(0.9))
 
-            Text("Edit leaderboard.json in the repo to add someone for everyone.")
+            Text("Codex fuel is automatic from this Mac. GitHub activity stays public and approximate.")
                 .font(.system(size: 12, weight: .medium, design: .rounded))
                 .foregroundStyle(palette.dimInk)
+
+            Button("Set My GitHub") {
+                activeSheet = .myGitHub(localProfileDraft)
+            }
+            .buttonStyle(SketchPlainTextButtonStyle(palette: palette))
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
     }
@@ -428,11 +443,15 @@ struct LeaderboardView: View {
             return "Using local Builder Board list. Shared list could not load."
         }
 
+        if let profile = localProfile {
+            return "Approximate score based on public GitHub activity. This Mac is set to @\(profile.githubUsername)."
+        }
+
         if let username = localIdentity.githubUsername, !username.isEmpty {
             return "Approximate score based on public GitHub activity. Local Codex fuel matched to @\(username)."
         }
 
-        return "Approximate score based on public GitHub activity. Add yourself with Use This Mac for automatic fuel."
+        return "Approximate score based on public GitHub activity. Set My GitHub to join from this Mac."
     }
 
     private func closeLeaderboardWindow() {
@@ -445,13 +464,36 @@ struct LeaderboardView: View {
             .first { $0.title == "Builder Board • This Week" }?
             .close()
     }
+
+    private var localProfile: LeaderboardPerson? {
+        store.people.first { $0.codexUsageMode == .localGauge && $0.manualWeeklyCodexBurnedPercent == nil }
+            ?? (store.people + sharedPeople).first { fuelResolver.matchesLocalIdentity($0) }
+    }
+
+    private var localProfileDraft: LeaderboardPerson {
+        if let localProfile {
+            return localProfile
+        }
+
+        let cleanDisplayName = localIdentity.displayName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let displayName = cleanDisplayName.isEmpty ? ProcessInfo.processInfo.userName : cleanDisplayName
+        return LeaderboardPerson(
+            displayName: displayName,
+            githubProfile: localIdentity.githubUsername ?? "",
+            codexUsageMode: .localGauge,
+            manualWeeklyCodexBurnedPercent: nil
+        )
+    }
 }
 
 private enum LeaderboardSheet: Identifiable {
+    case myGitHub(LeaderboardPerson)
     case edit(LeaderboardPerson)
 
     var id: String {
         switch self {
+        case .myGitHub(let person):
+            return "my-github-\(person.id.uuidString)"
         case .edit(let person):
             return "edit-\(person.id.uuidString)"
         }
@@ -459,8 +501,26 @@ private enum LeaderboardSheet: Identifiable {
 
     var person: LeaderboardPerson? {
         switch self {
-        case .edit(let person):
+        case .myGitHub(let person), .edit(let person):
             return person
+        }
+    }
+
+    var title: String {
+        switch self {
+        case .myGitHub:
+            return "Set My GitHub"
+        case .edit:
+            return "Edit Builder"
+        }
+    }
+
+    var showsFuelControls: Bool {
+        switch self {
+        case .myGitHub:
+            return false
+        case .edit:
+            return true
         }
     }
 }

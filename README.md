@@ -39,7 +39,9 @@ It compares:
 - GitHub activity as output
 - Codex weekly usage burned as fuel
 
-The first version uses public GitHub activity only. The app loads shared builders from `leaderboard.json` in this repo, then merges in any local settings saved on the current Mac.
+The first version uses public GitHub activity only. Anyone who downloads the app can click `Set My GitHub`, enter their username once, and get a local Builder Score using this Mac's automatic Codex fuel reading.
+
+The app also loads shared builders from `leaderboard.json` in this repo, then merges in any local settings saved on the current Mac.
 
 To add someone for everyone who downloads the app, edit `leaderboard.json` with:
 
@@ -48,7 +50,7 @@ To add someone for everyone who downloads the app, edit `leaderboard.json` with:
 - `codexUsageMode`
 - `manualWeeklyCodexBurnedPercent`
 
-People are added through the shared `leaderboard.json` file so everyone who downloads the app sees the same weekly board.
+People can join on their own Mac with `Set My GitHub`. The shared `leaderboard.json` file is only for default builders that everyone should see.
 
 Scoring:
 

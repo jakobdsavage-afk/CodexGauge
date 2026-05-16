@@ -5,7 +5,9 @@ struct LeaderboardSettingsView: View {
     @Environment(\.dismiss) private var dismiss
 
     let person: LeaderboardPerson?
+    let title: String
     let localCodexBurnedPercent: Double?
+    let showsFuelControls: Bool
     let onSave: (LeaderboardPerson) -> Void
 
     @State private var displayName: String
@@ -13,13 +15,21 @@ struct LeaderboardSettingsView: View {
     @State private var usageMode: LeaderboardCodexUsageMode
     @State private var manualBurnedPercent: String
 
-    init(person: LeaderboardPerson?, localCodexBurnedPercent: Double?, onSave: @escaping (LeaderboardPerson) -> Void) {
+    init(
+        person: LeaderboardPerson?,
+        title: String,
+        localCodexBurnedPercent: Double?,
+        showsFuelControls: Bool = true,
+        onSave: @escaping (LeaderboardPerson) -> Void
+    ) {
         self.person = person
+        self.title = title
         self.localCodexBurnedPercent = localCodexBurnedPercent
+        self.showsFuelControls = showsFuelControls
         self.onSave = onSave
         _displayName = State(initialValue: person?.displayName ?? "")
         _githubProfile = State(initialValue: person?.githubProfile ?? "")
-        _usageMode = State(initialValue: Self.initialUsageMode(for: person))
+        _usageMode = State(initialValue: showsFuelControls ? Self.initialUsageMode(for: person) : .localGauge)
         _manualBurnedPercent = State(initialValue: person?.manualWeeklyCodexBurnedPercent.map { String(Int($0.rounded())) } ?? "")
     }
 
@@ -27,7 +37,7 @@ struct LeaderboardSettingsView: View {
         let palette = NotebookTheme.palette(for: preferences.theme)
 
         VStack(alignment: .leading, spacing: 14) {
-            Text(person == nil ? "Add Builder" : "Edit Builder")
+            Text(title)
                 .notebookFont(size: 26, weight: .bold, handwritten: preferences.useHandwrittenFont)
                 .foregroundStyle(palette.brightInk)
 
@@ -35,38 +45,39 @@ struct LeaderboardSettingsView: View {
                 labeledField("Display name", text: $displayName, palette: palette)
                 labeledField("GitHub username or URL", text: $githubProfile, palette: palette)
 
-                Text("Codex fuel")
-                    .font(.system(size: 11, weight: .bold, design: .rounded))
-                    .foregroundStyle(palette.dimInk)
+                if showsFuelControls {
+                    Text("Codex fuel")
+                        .font(.system(size: 11, weight: .bold, design: .rounded))
+                        .foregroundStyle(palette.dimInk)
 
-                HStack(spacing: 8) {
-                    ForEach(LeaderboardCodexUsageMode.allCases) { mode in
-                        Button {
-                            usageMode = mode
-                        } label: {
-                            Text(mode.title)
-                                .frame(maxWidth: .infinity)
+                    HStack(spacing: 8) {
+                        ForEach(LeaderboardCodexUsageMode.allCases) { mode in
+                            Button {
+                                usageMode = mode
+                            } label: {
+                                Text(mode.title)
+                                    .frame(maxWidth: .infinity)
+                            }
+                            .buttonStyle(SketchSegmentButtonStyle(
+                                palette: palette,
+                                isSelected: usageMode == mode
+                            ))
                         }
-                        .buttonStyle(SketchSegmentButtonStyle(
-                            palette: palette,
-                            isSelected: usageMode == mode
-                        ))
                     }
-                }
 
-                if usageMode == .manual {
-                    labeledField("Weekly Codex burned %", text: $manualBurnedPercent, palette: palette)
+                    if usageMode == .manual {
+                        labeledField("Weekly Codex burned %", text: $manualBurnedPercent, palette: palette)
 
-                    if manualBurnedValue == nil && !manualBurnedPercent.isEmpty {
-                        Text("Add a number from 0 to 100 so this builder can get a score.")
-                            .font(.system(size: 10, weight: .semibold, design: .rounded))
-                            .foregroundStyle(palette.dimInk)
+                        if manualBurnedValue == nil && !manualBurnedPercent.isEmpty {
+                            Text("Add a number from 0 to 100 so this builder can get a score.")
+                                .font(.system(size: 10, weight: .semibold, design: .rounded))
+                                .foregroundStyle(palette.dimInk)
+                        }
+                    } else {
+                        automaticFuelText(palette: palette)
                     }
                 } else {
-                    Text(localCodexBurnedPercent.map { "Automatic: this Mac is at \(Int($0.rounded()))% weekly Codex burned." }
-                        ?? "Automatic: this will fill in as soon as Codex usage is available on this Mac.")
-                        .font(.system(size: 11, weight: .medium, design: .rounded))
-                        .foregroundStyle(palette.ink.opacity(0.72))
+                    automaticFuelText(palette: palette)
                 }
             }
 
@@ -117,16 +128,17 @@ struct LeaderboardSettingsView: View {
     private var canSave: Bool {
         !displayName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             && !LeaderboardPerson.normalizedGitHubUsername(from: githubProfile).isEmpty
-            && (usageMode == .localGauge || manualBurnedValue != nil)
+            && (!showsFuelControls || usageMode == .localGauge || manualBurnedValue != nil)
     }
 
     private func save() {
+        let savedUsageMode: LeaderboardCodexUsageMode = showsFuelControls ? usageMode : .localGauge
         let updated = LeaderboardPerson(
             id: person?.id ?? UUID(),
             displayName: displayName.trimmingCharacters(in: .whitespacesAndNewlines),
             githubProfile: githubProfile.trimmingCharacters(in: .whitespacesAndNewlines),
-            codexUsageMode: usageMode,
-            manualWeeklyCodexBurnedPercent: usageMode == .manual ? manualBurnedValue : nil
+            codexUsageMode: savedUsageMode,
+            manualWeeklyCodexBurnedPercent: savedUsageMode == .manual ? manualBurnedValue : nil
         )
         onSave(updated)
         dismiss()
@@ -152,6 +164,13 @@ struct LeaderboardSettingsView: View {
         }
 
         return person.codexUsageMode
+    }
+
+    private func automaticFuelText(palette: NotebookPalette) -> some View {
+        Text(localCodexBurnedPercent.map { "Automatic: this Mac is at \(Int($0.rounded()))% weekly Codex burned." }
+            ?? "Automatic: this will fill in as soon as Codex usage is available on this Mac.")
+            .font(.system(size: 11, weight: .medium, design: .rounded))
+            .foregroundStyle(palette.ink.opacity(0.72))
     }
 }
 
