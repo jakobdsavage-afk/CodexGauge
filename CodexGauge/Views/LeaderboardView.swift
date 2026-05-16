@@ -7,6 +7,7 @@ struct LeaderboardView: View {
 
     @State private var scores: [UUID: BuildEfficiencyScore] = [:]
     @State private var isRefreshing = false
+    @State private var needsRefreshAfterCurrentRun = false
     @State private var editingPerson: LeaderboardPerson?
     @State private var isAddingPerson = false
     @State private var statusMessage = "Approximate score based on public GitHub activity."
@@ -42,15 +43,13 @@ struct LeaderboardView: View {
         .frame(width: 560, height: 430)
         .sheet(item: $editingPerson) { person in
             LeaderboardSettingsView(person: person) { updated in
-                store.upsert(updated)
-                Task { await refreshScores() }
+                savePersonAndRefresh(updated)
             }
             .environmentObject(preferences)
         }
         .sheet(isPresented: $isAddingPerson) {
             LeaderboardSettingsView(person: nil) { person in
-                store.upsert(person)
-                Task { await refreshScores() }
+                savePersonAndRefresh(person)
             }
             .environmentObject(preferences)
         }
@@ -61,14 +60,7 @@ struct LeaderboardView: View {
 
     private var rankedScores: [BuildEfficiencyScore] {
         store.people
-            .map { person in
-                scores[person.id] ?? BuildEfficiencyScore(
-                    person: person,
-                    activity: nil,
-                    codexBurnedPercent: codexBurnedPercent(for: person),
-                    errorMessage: nil
-                )
-            }
+            .map(score(for:))
             .sorted { left, right in
                 switch (left.scoreValue, right.scoreValue) {
                 case let (left?, right?):
@@ -233,11 +225,18 @@ struct LeaderboardView: View {
 
     private func refreshScores() async {
         guard !isRefreshing else {
+            needsRefreshAfterCurrentRun = true
             return
         }
 
         isRefreshing = true
-        defer { isRefreshing = false }
+        defer {
+            isRefreshing = false
+            if needsRefreshAfterCurrentRun {
+                needsRefreshAfterCurrentRun = false
+                Task { await refreshScores() }
+            }
+        }
 
         if refreshService.snapshot.providerStatus == .loading {
             await refreshService.refreshNow()
@@ -276,6 +275,34 @@ struct LeaderboardView: View {
 
         scores = nextScores
         statusMessage = "Approximate score based on public GitHub activity."
+    }
+
+    private func savePersonAndRefresh(_ person: LeaderboardPerson) {
+        store.upsert(person)
+        scores[person.id] = placeholderScore(for: person, message: "Fetching public GitHub activity...")
+        Task { await refreshScores() }
+    }
+
+    private func score(for person: LeaderboardPerson) -> BuildEfficiencyScore {
+        if let existing = scores[person.id] {
+            return BuildEfficiencyScore(
+                person: person,
+                activity: existing.activity,
+                codexBurnedPercent: codexBurnedPercent(for: person),
+                errorMessage: existing.errorMessage
+            )
+        }
+
+        return placeholderScore(for: person, message: nil)
+    }
+
+    private func placeholderScore(for person: LeaderboardPerson, message: String?) -> BuildEfficiencyScore {
+        BuildEfficiencyScore(
+            person: person,
+            activity: nil,
+            codexBurnedPercent: codexBurnedPercent(for: person),
+            errorMessage: message
+        )
     }
 
     private func codexBurnedPercent(for person: LeaderboardPerson) -> Double? {
