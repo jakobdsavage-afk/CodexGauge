@@ -79,6 +79,8 @@ struct LeaderboardView: View {
                 Text("Build Efficiency Leaderboard")
                     .notebookFont(size: 28, weight: .bold, handwritten: preferences.useHandwrittenFont)
                     .foregroundStyle(palette.brightInk)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.78)
 
                 Text("Shipped vs Burned")
                     .font(.system(size: 12, weight: .bold, design: .rounded))
@@ -195,7 +197,7 @@ struct LeaderboardView: View {
                 .fill(palette.paperGroove.opacity(0.62))
                 .overlay {
                     RoundedRectangle(cornerRadius: 8)
-                        .stroke(palette.ink.opacity(rank == 1 ? 0.50 : 0.22), lineWidth: rank == 1 ? 1.25 : 0.8)
+                        .stroke(palette.ink.opacity(isWinner ? 0.50 : 0.22), lineWidth: isWinner ? 1.25 : 0.8)
                 }
         }
         .contextMenu {
@@ -240,12 +242,15 @@ struct LeaderboardView: View {
             Text(statusMessage)
                 .font(.system(size: 11, weight: .semibold, design: .rounded))
                 .foregroundStyle(palette.dimInk)
+                .lineLimit(1)
+                .minimumScaleFactor(0.78)
 
             Spacer()
 
             Text("Build Efficiency = GitHub pts / Codex burned")
                 .font(.system(size: 10, weight: .bold, design: .rounded))
                 .foregroundStyle(palette.ink.opacity(0.62))
+                .lineLimit(1)
         }
     }
 

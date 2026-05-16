@@ -46,15 +46,17 @@ final class LeaderboardWindowController: NSObject, NSWindowDelegate {
 
         let panel = NSPanel(
             contentRect: frame,
-            styleMask: [.titled, .closable, .fullSizeContentView],
+            styleMask: [.titled, .closable],
             backing: .buffered,
             defer: false
         )
         panel.title = "Build Efficiency Leaderboard"
-        panel.titlebarAppearsTransparent = true
+        panel.titlebarAppearsTransparent = false
+        panel.titleVisibility = .visible
+        panel.isMovableByWindowBackground = true
         panel.isReleasedWhenClosed = false
         panel.hidesOnDeactivate = false
-        panel.backgroundColor = .clear
+        panel.backgroundColor = NSColor(calibratedWhite: 0.015, alpha: 0.96)
         panel.isOpaque = false
         panel.hasShadow = true
         panel.level = .floating
