@@ -39,7 +39,16 @@ It compares:
 - GitHub activity as output
 - Codex weekly usage burned as fuel
 
-The first version uses public GitHub activity only. Add people manually with a display name, GitHub username/profile URL, and either a manual weekly Codex burned percent or this Mac's current Codex weekly usage.
+The first version uses public GitHub activity only. The app loads shared builders from `leaderboard.json` in this repo, then merges in any people added manually on the current Mac.
+
+To add someone for everyone who downloads the app, edit `leaderboard.json` with:
+
+- `displayName`
+- `githubProfile`
+- `codexUsageMode`
+- `manualWeeklyCodexBurnedPercent`
+
+Manual additions in the app are still supported, but they stay local to that Mac.
 
 Scoring:
 
@@ -104,6 +113,7 @@ CodexGauge/
 - `UsageProvider` is the provider protocol.
 - `CodexProvider` is the first concrete provider and owns Codex account and local usage detection.
 - `GitHubProvider` reads public GitHub events for the optional leaderboard.
+- `SharedLeaderboardProvider` downloads the shared leaderboard people from the repo's public `leaderboard.json`.
 - `UsageRefreshService` refreshes usage every 10 seconds.
 - `FloatingPanelController` owns the native always-visible panel, remembered position, opacity, and floating level.
 - `LeaderboardWindowController` owns the optional V2 leaderboard window.

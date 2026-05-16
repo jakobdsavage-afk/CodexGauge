@@ -36,6 +36,7 @@
 		AA000000000000000000001B /* LeaderboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000000000000000000011D /* LeaderboardView.swift */; };
 		AA000000000000000000001C /* LeaderboardSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000000000000000000011E /* LeaderboardSettingsView.swift */; };
 		AA000000000000000000001D /* LeaderboardScoringTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000000000000000000011F /* LeaderboardScoringTests.swift */; };
+		AA000000000000000000001E /* SharedLeaderboardProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000120 /* SharedLeaderboardProvider.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -80,6 +81,7 @@
 		AA000000000000000000011D /* LeaderboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LeaderboardView.swift; sourceTree = "<group>"; };
 		AA000000000000000000011E /* LeaderboardSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LeaderboardSettingsView.swift; sourceTree = "<group>"; };
 		AA000000000000000000011F /* LeaderboardScoringTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LeaderboardScoringTests.swift; sourceTree = "<group>"; };
+		AA0000000000000000000120 /* SharedLeaderboardProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedLeaderboardProvider.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -142,6 +144,7 @@
 				AA0000000000000000000105 /* CodexProvider.swift */,
 				AA0000000000000000000106 /* CodexSessionRateLimitParser.swift */,
 				AA000000000000000000011A /* GitHubProvider.swift */,
+				AA0000000000000000000120 /* SharedLeaderboardProvider.swift */,
 			);
 			path = Providers;
 			sourceTree = "<group>";
@@ -332,6 +335,7 @@
 				AA000000000000000000001A /* LeaderboardWindowController.swift in Sources */,
 				AA000000000000000000001B /* LeaderboardView.swift in Sources */,
 				AA000000000000000000001C /* LeaderboardSettingsView.swift in Sources */,
+				AA000000000000000000001E /* SharedLeaderboardProvider.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

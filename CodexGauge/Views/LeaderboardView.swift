@@ -6,6 +6,7 @@ struct LeaderboardView: View {
     @EnvironmentObject private var store: LeaderboardStore
 
     @State private var scores: [UUID: BuildEfficiencyScore] = [:]
+    @State private var sharedPeople: [LeaderboardPerson] = []
     @State private var isRefreshing = false
     @State private var needsRefreshAfterCurrentRun = false
     @State private var editingPerson: LeaderboardPerson?
@@ -13,6 +14,7 @@ struct LeaderboardView: View {
     @State private var statusMessage = "Approximate score based on public GitHub activity."
 
     private let githubProvider = GitHubProvider()
+    private let sharedLeaderboardProvider = SharedLeaderboardProvider()
 
     var body: some View {
         let palette = NotebookTheme.palette(for: preferences.theme)
@@ -23,7 +25,7 @@ struct LeaderboardView: View {
             VStack(alignment: .leading, spacing: 16) {
                 header(palette: palette)
 
-                if store.people.isEmpty {
+                if leaderboardPeople.isEmpty {
                     emptyState(palette: palette)
                 } else {
                     ScrollView {
@@ -59,7 +61,7 @@ struct LeaderboardView: View {
     }
 
     private var rankedScores: [BuildEfficiencyScore] {
-        store.people
+        leaderboardPeople
             .map(score(for:))
             .sorted { left, right in
                 switch (left.scoreValue, right.scoreValue) {
@@ -116,7 +118,7 @@ struct LeaderboardView: View {
                 .font(.system(size: 14, weight: .semibold, design: .rounded))
                 .foregroundStyle(palette.ink.opacity(0.9))
 
-            Text("No accounts, no cloud sync, no boss dashboard. Just a fun local scoreboard.")
+            Text("Shared builders come from leaderboard.json. Local additions stay on this Mac.")
                 .font(.system(size: 12, weight: .medium, design: .rounded))
                 .foregroundStyle(palette.dimInk)
         }
@@ -190,6 +192,7 @@ struct LeaderboardView: View {
                 store.delete(score.person)
                 scores[score.person.id] = nil
             }
+            .disabled(!isLocalPerson(score.person))
         }
     }
 
@@ -242,9 +245,16 @@ struct LeaderboardView: View {
             await refreshService.refreshNow()
         }
 
+        var sharedLoadFailed = false
+        do {
+            sharedPeople = try await sharedLeaderboardProvider.fetchPeople()
+        } catch {
+            sharedLoadFailed = true
+        }
+
         var nextScores: [UUID: BuildEfficiencyScore] = [:]
 
-        for person in store.people {
+        for person in leaderboardPeople {
             guard person.canFetchGitHubActivity else {
                 nextScores[person.id] = BuildEfficiencyScore(
                     person: person,
@@ -274,7 +284,9 @@ struct LeaderboardView: View {
         }
 
         scores = nextScores
-        statusMessage = "Approximate score based on public GitHub activity."
+        statusMessage = sharedLoadFailed
+            ? "Using local leaderboard list. Shared list could not load."
+            : "Approximate score based on public GitHub activity."
     }
 
     private func savePersonAndRefresh(_ person: LeaderboardPerson) {
@@ -303,6 +315,36 @@ struct LeaderboardView: View {
             codexBurnedPercent: codexBurnedPercent(for: person),
             errorMessage: message
         )
+    }
+
+    private var leaderboardPeople: [LeaderboardPerson] {
+        var merged: [LeaderboardPerson] = []
+        var seenKeys = Set<String>()
+
+        for person in store.people + sharedPeople {
+            let key = mergeKey(for: person)
+            guard !seenKeys.contains(key) else {
+                continue
+            }
+
+            merged.append(person)
+            seenKeys.insert(key)
+        }
+
+        return merged
+    }
+
+    private func isLocalPerson(_ person: LeaderboardPerson) -> Bool {
+        store.people.contains { mergeKey(for: $0) == mergeKey(for: person) }
+    }
+
+    private func mergeKey(for person: LeaderboardPerson) -> String {
+        let username = person.githubUsername.lowercased()
+        if !username.isEmpty {
+            return "github:\(username)"
+        }
+
+        return "id:\(person.id.uuidString)"
     }
 
     private func codexBurnedPercent(for person: LeaderboardPerson) -> Double? {
