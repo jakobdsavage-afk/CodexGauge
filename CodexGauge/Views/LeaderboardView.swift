@@ -95,13 +95,6 @@ struct LeaderboardView: View {
             Spacer()
 
             Button {
-                activeSheet = .add
-            } label: {
-                Label("Add", systemImage: "plus")
-            }
-            .buttonStyle(SketchPlainTextButtonStyle(palette: palette))
-
-            Button {
                 Task { await refreshScores() }
             } label: {
                 Image(systemName: isRefreshing ? "hourglass" : "arrow.clockwise")
@@ -142,11 +135,11 @@ struct LeaderboardView: View {
                 .font(.system(size: 28, weight: .bold))
                 .foregroundStyle(palette.brightInk)
 
-            Text("Add Jake, Dad, or whoever is in the weekly build duel.")
+            Text("Builder Board updates from the shared weekly list.")
                 .font(.system(size: 14, weight: .semibold, design: .rounded))
                 .foregroundStyle(palette.ink.opacity(0.9))
 
-            Text("Shared builders come from leaderboard.json. Local additions stay on this Mac.")
+            Text("Edit leaderboard.json in the repo to add someone for everyone.")
                 .font(.system(size: 12, weight: .medium, design: .rounded))
                 .foregroundStyle(palette.dimInk)
         }
@@ -455,13 +448,10 @@ struct LeaderboardView: View {
 }
 
 private enum LeaderboardSheet: Identifiable {
-    case add
     case edit(LeaderboardPerson)
 
     var id: String {
         switch self {
-        case .add:
-            return "add"
         case .edit(let person):
             return "edit-\(person.id.uuidString)"
         }
@@ -469,8 +459,6 @@ private enum LeaderboardSheet: Identifiable {
 
     var person: LeaderboardPerson? {
         switch self {
-        case .add:
-            return nil
         case .edit(let person):
             return person
         }

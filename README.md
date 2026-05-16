@@ -39,7 +39,7 @@ It compares:
 - GitHub activity as output
 - Codex weekly usage burned as fuel
 
-The first version uses public GitHub activity only. The app loads shared builders from `leaderboard.json` in this repo, then merges in any people added manually on the current Mac.
+The first version uses public GitHub activity only. The app loads shared builders from `leaderboard.json` in this repo, then merges in any local settings saved on the current Mac.
 
 To add someone for everyone who downloads the app, edit `leaderboard.json` with:
 
@@ -48,7 +48,7 @@ To add someone for everyone who downloads the app, edit `leaderboard.json` with:
 - `codexUsageMode`
 - `manualWeeklyCodexBurnedPercent`
 
-Manual additions in the app are still supported, but they stay local to that Mac.
+People are added through the shared `leaderboard.json` file so everyone who downloads the app sees the same weekly board.
 
 Scoring:
 
