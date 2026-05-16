@@ -30,6 +30,32 @@ Codex Gauge keeps its controls small so the widget still feels like a desktop in
 
 These settings are available from the widget controls and from the menu bar icon.
 
+## V2 Experiment: Build Efficiency Leaderboard
+
+The optional leaderboard is a local-only experiment for friendly coding competition.
+
+It compares:
+
+- GitHub activity as output
+- Codex weekly usage burned as fuel
+
+The first version uses public GitHub activity only. Add people manually with a display name, GitHub username/profile URL, and either a manual weekly Codex burned percent or this Mac's current Codex weekly usage.
+
+Scoring:
+
+```text
+Build Efficiency = GitHub weekly activity points / max(weekly Codex burned percent, 1) * 100
+```
+
+Activity points:
+
+- Commit/push activity: 1 point
+- Pull request opened: 3 points
+- Issue closed: 2 points
+- Active contribution day: 1 point
+
+Scores are approximate and based on public GitHub activity. The feature does not require account creation, cloud sync, or multiplayer.
+
 ## What It Reads
 
 The current provider is `CodexProvider`.
@@ -77,10 +103,13 @@ CodexGauge/
 
 - `UsageProvider` is the provider protocol.
 - `CodexProvider` is the first concrete provider and owns Codex account and local usage detection.
+- `GitHubProvider` reads public GitHub events for the optional leaderboard.
 - `UsageRefreshService` refreshes usage every 10 seconds.
 - `FloatingPanelController` owns the native always-visible panel, remembered position, opacity, and floating level.
+- `LeaderboardWindowController` owns the optional V2 leaderboard window.
 - `UpdaterService` owns Sparkle update checks.
 - `UserPreferences` stores theme, size, pin mode, typography, opacity, launch-at-login, and first-run state.
+- `LeaderboardStore` stores leaderboard people locally in `UserDefaults`.
 - SwiftUI views draw the hand-sketched notebook interface.
 
 Future providers can be added by implementing `UsageProvider` and swapping the provider passed into `UsageRefreshService`.

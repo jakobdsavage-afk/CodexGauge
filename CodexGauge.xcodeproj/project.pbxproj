@@ -27,6 +27,15 @@
 		AA0000000000000000000012 /* CodexSessionRateLimitParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000112 /* CodexSessionRateLimitParserTests.swift */; };
 		AA0000000000000000000013 /* UpdaterService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000116 /* UpdaterService.swift */; };
 		AA0000000000000000000014 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = AA0000000000000000000A02 /* Sparkle */; };
+		AA0000000000000000000015 /* LeaderboardPerson.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000117 /* LeaderboardPerson.swift */; };
+		AA0000000000000000000016 /* GitHubActivitySummary.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000118 /* GitHubActivitySummary.swift */; };
+		AA0000000000000000000017 /* BuildEfficiencyScore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000119 /* BuildEfficiencyScore.swift */; };
+		AA0000000000000000000018 /* GitHubProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000000000000000000011A /* GitHubProvider.swift */; };
+		AA0000000000000000000019 /* LeaderboardStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000000000000000000011B /* LeaderboardStore.swift */; };
+		AA000000000000000000001A /* LeaderboardWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000000000000000000011C /* LeaderboardWindowController.swift */; };
+		AA000000000000000000001B /* LeaderboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000000000000000000011D /* LeaderboardView.swift */; };
+		AA000000000000000000001C /* LeaderboardSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000000000000000000011E /* LeaderboardSettingsView.swift */; };
+		AA000000000000000000001D /* LeaderboardScoringTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000000000000000000011F /* LeaderboardScoringTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -62,6 +71,15 @@
 		AA0000000000000000000114 /* CodexGauge.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CodexGauge.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AA0000000000000000000115 /* CodexGaugeTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CodexGaugeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		AA0000000000000000000116 /* UpdaterService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdaterService.swift; sourceTree = "<group>"; };
+		AA0000000000000000000117 /* LeaderboardPerson.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LeaderboardPerson.swift; sourceTree = "<group>"; };
+		AA0000000000000000000118 /* GitHubActivitySummary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitHubActivitySummary.swift; sourceTree = "<group>"; };
+		AA0000000000000000000119 /* BuildEfficiencyScore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuildEfficiencyScore.swift; sourceTree = "<group>"; };
+		AA000000000000000000011A /* GitHubProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitHubProvider.swift; sourceTree = "<group>"; };
+		AA000000000000000000011B /* LeaderboardStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LeaderboardStore.swift; sourceTree = "<group>"; };
+		AA000000000000000000011C /* LeaderboardWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LeaderboardWindowController.swift; sourceTree = "<group>"; };
+		AA000000000000000000011D /* LeaderboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LeaderboardView.swift; sourceTree = "<group>"; };
+		AA000000000000000000011E /* LeaderboardSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LeaderboardSettingsView.swift; sourceTree = "<group>"; };
+		AA000000000000000000011F /* LeaderboardScoringTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LeaderboardScoringTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -110,6 +128,9 @@
 			isa = PBXGroup;
 			children = (
 				AA0000000000000000000103 /* UsageSnapshot.swift */,
+				AA0000000000000000000117 /* LeaderboardPerson.swift */,
+				AA0000000000000000000118 /* GitHubActivitySummary.swift */,
+				AA0000000000000000000119 /* BuildEfficiencyScore.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -120,6 +141,7 @@
 				AA0000000000000000000104 /* UsageProvider.swift */,
 				AA0000000000000000000105 /* CodexProvider.swift */,
 				AA0000000000000000000106 /* CodexSessionRateLimitParser.swift */,
+				AA000000000000000000011A /* GitHubProvider.swift */,
 			);
 			path = Providers;
 			sourceTree = "<group>";
@@ -132,6 +154,8 @@
 				AA0000000000000000000109 /* LoginItemManager.swift */,
 				AA000000000000000000010A /* FloatingPanelController.swift */,
 				AA0000000000000000000116 /* UpdaterService.swift */,
+				AA000000000000000000011B /* LeaderboardStore.swift */,
+				AA000000000000000000011C /* LeaderboardWindowController.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -146,6 +170,8 @@
 				AA000000000000000000010F /* GaugeRow.swift */,
 				AA0000000000000000000110 /* WidgetControlsView.swift */,
 				AA0000000000000000000111 /* GaugeWidgetView.swift */,
+				AA000000000000000000011D /* LeaderboardView.swift */,
+				AA000000000000000000011E /* LeaderboardSettingsView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -162,6 +188,7 @@
 			isa = PBXGroup;
 			children = (
 				AA0000000000000000000112 /* CodexSessionRateLimitParserTests.swift */,
+				AA000000000000000000011F /* LeaderboardScoringTests.swift */,
 			);
 			path = Tests/CodexGaugeTests;
 			sourceTree = "<group>";
@@ -297,6 +324,14 @@
 				AA0000000000000000000010 /* WidgetControlsView.swift in Sources */,
 				AA0000000000000000000011 /* GaugeWidgetView.swift in Sources */,
 				AA0000000000000000000013 /* UpdaterService.swift in Sources */,
+				AA0000000000000000000015 /* LeaderboardPerson.swift in Sources */,
+				AA0000000000000000000016 /* GitHubActivitySummary.swift in Sources */,
+				AA0000000000000000000017 /* BuildEfficiencyScore.swift in Sources */,
+				AA0000000000000000000018 /* GitHubProvider.swift in Sources */,
+				AA0000000000000000000019 /* LeaderboardStore.swift in Sources */,
+				AA000000000000000000001A /* LeaderboardWindowController.swift in Sources */,
+				AA000000000000000000001B /* LeaderboardView.swift in Sources */,
+				AA000000000000000000001C /* LeaderboardSettingsView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -305,6 +340,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				AA0000000000000000000012 /* CodexSessionRateLimitParserTests.swift in Sources */,
+				AA000000000000000000001D /* LeaderboardScoringTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

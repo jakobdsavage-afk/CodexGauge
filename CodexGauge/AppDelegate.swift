@@ -7,7 +7,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let refreshService = UsageRefreshService(provider: CodexProvider())
     private let loginItemManager = LoginItemManager()
     private let updaterService = UpdaterService()
+    private let leaderboardStore = LeaderboardStore()
     private var panelController: FloatingPanelController?
+    private var leaderboardController: LeaderboardWindowController?
     private var statusItem: NSStatusItem?
     private var cancellables: Set<AnyCancellable> = []
 
@@ -17,6 +19,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             refreshService: refreshService
         )
         panelController = controller
+        leaderboardController = LeaderboardWindowController(
+            preferences: preferences,
+            refreshService: refreshService,
+            store: leaderboardStore
+        )
 
         configureStatusItem()
         bindLoginPreference()
@@ -42,6 +49,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func makeStatusMenu() -> NSMenu {
         let menu = NSMenu()
         menu.addItem(NSMenuItem(title: "Show / Hide Codex Gauge", action: #selector(togglePanel), keyEquivalent: "g"))
+        menu.addItem(NSMenuItem(title: "Build Efficiency Leaderboard", action: #selector(showLeaderboard), keyEquivalent: "b"))
         menu.addItem(NSMenuItem(title: "Refresh Now", action: #selector(refreshNow), keyEquivalent: "r"))
         menu.addItem(NSMenuItem(title: "Check for Updates...", action: #selector(checkForUpdates), keyEquivalent: "u"))
         menu.addItem(NSMenuItem.separator())
@@ -147,6 +155,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func refreshNow() {
         Task { await refreshService.refreshNow() }
+    }
+
+    @objc private func showLeaderboard() {
+        leaderboardController?.show()
     }
 
     @objc private func checkForUpdates() {
