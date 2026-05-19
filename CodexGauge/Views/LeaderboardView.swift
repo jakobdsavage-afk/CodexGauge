@@ -162,7 +162,7 @@ struct LeaderboardView: View {
     }
 
     private func scoreRow(_ score: BuildEfficiencyScore, rank: Int, palette: NotebookPalette) -> some View {
-        let isWinner = rank == 1 && score.isScorable
+        let isWinner = rank == 1 && score.isScorable && score.activityPoints > 0
 
         return VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .center, spacing: 10) {
@@ -189,7 +189,7 @@ struct LeaderboardView: View {
                         .monospacedDigit()
                         .foregroundStyle(palette.brightInk)
 
-                    Text(isWinner ? "Weekly Winner" : "AI Fuel Score")
+                    Text(scoreBadgeText(for: score, isWinner: isWinner))
                         .font(.system(size: 10, weight: .bold, design: .rounded))
                         .foregroundStyle(palette.dimInk)
                 }
@@ -207,9 +207,15 @@ struct LeaderboardView: View {
             }
 
             if score.codexBurnedPercent == nil {
-                missingFuelActions(for: score, palette: palette)
+                missingFuelNote(for: score, palette: palette)
             } else if fuelResolver.usesLocalFuel(for: score.person) {
                 Text("Codex fuel is being read automatically from this Mac.")
+                    .font(.system(size: 10, weight: .semibold, design: .rounded))
+                    .foregroundStyle(palette.dimInk)
+            }
+
+            if score.isScorable && score.activityPoints == 0 {
+                Text("No public GitHub output found in the last 7 days.")
                     .font(.system(size: 10, weight: .semibold, design: .rounded))
                     .foregroundStyle(palette.dimInk)
             }
@@ -242,15 +248,15 @@ struct LeaderboardView: View {
         }
     }
 
-    private func missingFuelActions(for score: BuildEfficiencyScore, palette: NotebookPalette) -> some View {
+    private func missingFuelNote(for score: BuildEfficiencyScore, palette: NotebookPalette) -> some View {
         HStack(spacing: 8) {
-            Text("No score yet. Add Codex fuel.")
+            Text(missingFuelText(for: score))
                 .font(.system(size: 10, weight: .bold, design: .rounded))
                 .foregroundStyle(palette.dimInk)
 
             Spacer()
 
-            if refreshService.snapshot.weeklyUsagePercent != nil {
+            if canUseThisMacFuel(for: score.person), refreshService.snapshot.weeklyUsagePercent != nil {
                 Button("Use This Mac") {
                     savePersonAndRefresh(score.person.withCodexUsage(mode: .localGauge, manualPercent: nil))
                 }
@@ -258,12 +264,34 @@ struct LeaderboardView: View {
                 .help("Use this Mac's current weekly Codex burned percent")
             }
 
-            Button("Set Fuel") {
-                activeSheet = .edit(score.person.withCodexUsage(mode: .manual, manualPercent: nil))
+            if canUseThisMacFuel(for: score.person) {
+                Button("Set Fuel") {
+                    activeSheet = .edit(score.person.withCodexUsage(mode: .manual, manualPercent: nil))
+                }
+                .buttonStyle(SketchPlainTextButtonStyle(palette: palette))
             }
-            .buttonStyle(SketchPlainTextButtonStyle(palette: palette))
         }
         .padding(.top, 2)
+    }
+
+    private func scoreBadgeText(for score: BuildEfficiencyScore, isWinner: Bool) -> String {
+        if isWinner {
+            return "Weekly Winner"
+        }
+
+        if score.isScorable && score.activityPoints == 0 {
+            return "No Public Output"
+        }
+
+        return "AI Fuel Score"
+    }
+
+    private func missingFuelText(for score: BuildEfficiencyScore) -> String {
+        if canUseThisMacFuel(for: score.person) {
+            return "No score yet. Use this Mac's Codex fuel."
+        }
+
+        return "Waiting on this builder's Mac for Codex fuel."
     }
 
     private func metric(_ label: String, _ value: String, palette: NotebookPalette) -> some View {
@@ -419,6 +447,10 @@ struct LeaderboardView: View {
 
     private func isLocalPerson(_ person: LeaderboardPerson) -> Bool {
         store.people.contains { mergeKey(for: $0) == mergeKey(for: person) }
+    }
+
+    private func canUseThisMacFuel(for person: LeaderboardPerson) -> Bool {
+        isLocalPerson(person) || fuelResolver.matchesLocalIdentity(person)
     }
 
     private func mergeKey(for person: LeaderboardPerson) -> String {

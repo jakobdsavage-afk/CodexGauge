@@ -65,7 +65,11 @@ Activity points:
 - Issue closed: 2 points
 - Active contribution day: 1 point
 
-Scores are approximate and based on public GitHub activity. The feature does not require account creation, cloud sync, or multiplayer.
+Scores are approximate and based on public GitHub activity from the last 7 days. Private repository work may not appear in GitHub's public events feed.
+
+Codex fuel is private to each Mac. Codex Gauge only uses automatic fuel for the person set as `My GitHub` on that Mac, so one builder's computer will not accidentally apply its fuel percentage to another builder.
+
+The feature does not require account creation, cloud sync, or multiplayer.
 
 ## What It Reads
 
