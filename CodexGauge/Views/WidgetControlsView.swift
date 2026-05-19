@@ -10,7 +10,7 @@ struct WidgetControlsView: View {
 
         HStack(spacing: 7) {
             Menu {
-                ForEach(GaugePinMode.allCases) { mode in
+                ForEach(GaugePinMode.visibleWidgetModes) { mode in
                     Button {
                         preferences.pinMode = mode
                     } label: {
@@ -63,6 +63,26 @@ struct WidgetControlsView: View {
                         Label("About Data Source", systemImage: "info.circle")
                     }
                 }
+
+                Section("App") {
+                    Button {
+                        sendAppAction("showLeaderboard")
+                    } label: {
+                        Label("Builder Board", systemImage: "crown")
+                    }
+
+                    Button {
+                        sendAppAction("checkForUpdates")
+                    } label: {
+                        Label("Check for Updates...", systemImage: "sparkles")
+                    }
+
+                    Button(role: .destructive) {
+                        NSApp.terminate(nil)
+                    } label: {
+                        Label("Quit Codex Gauge", systemImage: "power")
+                    }
+                }
             } label: {
                 Image(systemName: "slider.horizontal.3")
             }
@@ -76,6 +96,16 @@ struct WidgetControlsView: View {
                 .help("Transparency")
         }
         .buttonStyle(SketchIconButtonStyle())
+    }
+
+    private func sendAppAction(_ selectorName: String) {
+        (NSApp.delegate as? NSObject)?.perform(NSSelectorFromString(selectorName))
+    }
+}
+
+private extension GaugePinMode {
+    static var visibleWidgetModes: [GaugePinMode] {
+        [.floating, .desktop]
     }
 }
 
